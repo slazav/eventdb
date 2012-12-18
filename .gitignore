@@ -1,0 +1,4 @@
+*.o
+eventdb
+dbs
+push.sh
