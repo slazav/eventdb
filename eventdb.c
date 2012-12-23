@@ -49,6 +49,8 @@ const action_t actions[] = {
   {"event_put",   &do_event_put,   ACT_RW, LVL_NORM, 8,-1,
      "<id> <title> <body> <people> <route> <date1> <date2> <tags>",
      "Add new event, print its id"},
+  {"event_del",   &do_event_del,   ACT_RW, LVL_NORM, 1,-1,
+     "<id>", "Delete event"},
   {"event_print", &do_event_print, ACT_RO, LVL_NOAUTH, 1,-1,
      "<id>", "Print event data"},
   {"event_search",&do_event_search,ACT_RO, LVL_NOAUTH, 7,-1,

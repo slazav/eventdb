@@ -58,7 +58,8 @@ echo "======== levels ========"
 
 check 0 "root: sla lvl -> 99"       "root" "123" user_chlvl sla 99
 check 0 "sla: sla1 created"          "sla" "123" user_add sla1 123
-check 1 "sla: chpwd"                 "sla" "123" user_chpwd sla1 234
+check 0 "sla: sla1 chpwd"            "sla" "123" user_chpwd sla1 234
+check 1 "sla: root chpwd"            "sla" "123" user_chpwd root 234
 check 0 "sla: sla1 lvl -> 99"        "sla" "123" user_chlvl sla1 99
 check 1 "sla: root lvl -> 99"        "sla" "123" user_chlvl root 99
 check 0 "sla: sla lvl -> 98"         "sla" "123" user_chlvl sla 98
@@ -87,6 +88,10 @@ check 0 "print event" "" "" event_print "1"
 check 0 "edit event by sla" "sla" "123" event_put 1 "title\ntitle1e" "<body1_n>
 body2" "people" "route" "20121201" "20121205" "123,222"
 check 0 "print event" "" "" event_print "1"
+
+check 1 "del event 3" "sla" "123" event_del "3"
+check 1 "del event 2 - perm" "" "" event_del "2"
+check 0 "del event 2" "sla" "123" event_del "2"
 
 echo "======== Search ========"
 

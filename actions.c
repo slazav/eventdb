@@ -166,6 +166,12 @@ do_event_put(dbs_t * dbs, char * user, int argc, char **argv){
 }
 
 int
+do_event_del(dbs_t * dbs, char * user, int argc, char **argv){
+  int id = atoi(argv[0]);
+  return event_del(dbs, id);
+}
+
+int
 do_event_print(dbs_t * dbs, char * user, int argc, char **argv){
   int id = atoi(argv[0]);
   return event_print(dbs, id);

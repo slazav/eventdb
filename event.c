@@ -169,6 +169,18 @@ event_new(dbs_t *dbs, event_t * event){
 }
 
 int
+event_del(dbs_t *dbs, int id){
+  int ret;
+  DBT key = mk_int_dbt(&id);
+
+  ret = dbs->events->del(dbs->events, NULL, &key, 0);
+  if (ret!=0)
+    fprintf(stderr, "Error: can't delete event: %s\n",
+      db_strerror(ret));
+  return ret;
+}
+
+int
 event_print(dbs_t *dbs, int id){
   int ret;
   DBT key = mk_int_dbt(&id);

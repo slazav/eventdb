@@ -31,6 +31,10 @@ int event_put(dbs_t *dbs, int id, event_t * event, int overwrite);
    Return 0 on success. Print error message on errors. */
 int event_new(dbs_t *dbs, event_t * event);
 
+/* Delete event from the database.
+   Return 0 on success. Print error message on errors. */
+int event_del(dbs_t *dbs, int id);
+
 /* Get event from the database and print it to stdout in
    xml-like format.
    Return 0 on success. Print error message on errors. */
