@@ -87,13 +87,15 @@ user_del(dbs_t *dbs, char * name){
 /****************************************************************/
 
 int
-user_check(dbs_t *dbs, char * name, char *pwd){
+user_check(dbs_t *dbs, char * name, char *pwd, int level){
   int ret;
   user_t user;
+  if (level<0) return 0;
+
   if (strlen(name)!=0 &&
       user_get(dbs, NULL, name)==0 && // w/o error message
       user_get(dbs, &user, name)==0 &&
-      user.active &&
+      user.active && user.level>=level &&
       memcmp(MD5(pwd, strlen(pwd),NULL),
                 user.md5, sizeof(user.md5))==0) return 0;
 
@@ -102,9 +104,10 @@ user_check(dbs_t *dbs, char * name, char *pwd){
 }
 
 int
-user_add(dbs_t *dbs, char * name, char *pwd){
+user_add(dbs_t *dbs, char * name, char *pwd, int level){
   user_t user;
-  user.active=1;
+  user.active = 1;
+  user.level  = level;
   MD5(pwd, strlen(pwd), user.md5);
   return user_put(dbs, &user, name, 0);
 }
@@ -130,6 +133,16 @@ user_chact(dbs_t *dbs, char * name, int act){
 }
 
 int
+user_chlvl(dbs_t *dbs, char * name, int level){
+  int ret;
+  user_t user;
+  ret = user_get(dbs, &user, name);
+  if (ret) return ret;
+  user.level = level;
+  return user_put(dbs, &user, name, 1);
+}
+
+int
 user_list(dbs_t *dbs, int mode){
 
   int ret;
@@ -148,15 +161,12 @@ user_list(dbs_t *dbs, int mode){
       case 0:  /* list only active users */
         printf("%s", (char *)(key.data));
         break;
-      case 1: /* list names, activity, groups */
-        printf("%s:%d:", (char *)(key.data), user->active);
-        group_list(dbs, (char *)(key.data), ' ');
+      case 1: /* list names, activity, level */
+        printf("%s:%d:%d", (char *)(key.data), user->active, user->level);
         break;
       case 2: /* list full information (with md5) */
-        printf("%s:%d:", (char *)(key.data), user->active);
+        printf("%s:%d:%d:", (char *)(key.data), user->active, user->level);
         for (i=0; i<sizeof(user->md5); i++) printf("%02X", user->md5[i]);
-        printf(":");
-        group_list(dbs, (char *)(key.data), ' ');
         break;
     }
     printf("\n");
@@ -181,96 +191,14 @@ user_show(dbs_t *dbs, char *name, int mode){
       printf("%s", name);
       break;
     case 1: /* list names, activity, groups */
-      printf("%s:%d:", name, user.active);
-      ret=group_list(dbs, name, ' ');
+      printf("%s:%d:%d", name, user.active, user.level);
       break;
     case 2: /* list full information (with md5) */
-      printf("%s:%d:", name, user.active);
+      printf("%s:%d:%d:", name, user.active, user.level);
       for (i=0; i<sizeof(user.md5); i++) printf("%02X", user.md5[i]);
-      printf(":");
-      ret=group_list(dbs, name, ' ');
       break;
   }
   printf("\n");
   return ret;
 }
 
-/***********************************************************/
-
-int group_add(dbs_t *dbs, char * user, char * group){
-  int ret;
-  DBT key = mk_string_dbt(user);
-  DBT val = mk_string_dbt(group);
-
-  if (check_name(group)!=0) return 1;
-
-  if (user_get(dbs, NULL, user)!=0) return 1;
-
-  ret = dbs->groups->put(dbs->groups, NULL,
-    &key, &val, DB_NODUPDATA);
-
-  if (ret!=0)
-    fprintf(stderr, "Error: can't update group information: %s\n",
-      db_strerror(ret));
-  return ret;
-}
-
-int group_del(dbs_t *dbs, char * user, char * group){
-  int ret;
-  DBT key = mk_string_dbt(user);
-  DBT val = mk_string_dbt(group);
-  DBC *curs;
-
-  dbs->groups->cursor(dbs->groups, NULL, &curs, 0);
-
-  ret=curs->get(curs, &key, &val, DB_GET_BOTH);
-  if (ret==0) curs->del(curs, 0);
-  else fprintf(stderr, "Error: can't remove user from group: %s\n",
-         db_strerror(ret));
-
-  if (curs) curs->close(curs);
-  return ret;
-}
-
-int group_check(dbs_t *dbs, char * user, char * group){
-  int ret;
-  DBT key = mk_string_dbt(user);
-  DBT val = mk_string_dbt(group);
-  DBC *curs;
-  dbs->groups->cursor(dbs->groups, NULL, &curs, 0);
-  ret = curs->get(curs, &key, &val, DB_GET_BOTH);
-
-  if (ret!=0 && ret != DB_NOTFOUND)
-    fprintf(stderr, "Error: can't check group: %s\n",
-      db_strerror(ret));
-
-  if (ret == DB_NOTFOUND)
-    fprintf(stderr, "Error: user is not in the group: %s\n",
-      group);
-
-  if (curs) curs->close(curs);
-  return ret;
-}
-
-int group_list(dbs_t *dbs, char * user, char sep){
-  int ret;
-  DBT key = mk_string_dbt(user);
-  DBT val = mk_empty_dbt();
-  DBC *curs;
-
-  dbs->groups->cursor(dbs->groups, NULL, &curs, 0);
-
-  ret=curs->get(curs, &key, &val, DB_SET);
-  while (ret == 0){
-    printf("%s%c", (char *)val.data, sep);
-    ret=curs->get(curs, &key, &val, DB_NEXT_DUP);
-  }
-
-  if (ret != DB_NOTFOUND)
-    fprintf(stderr, "Error: can't get group list: %s\n",
-      db_strerror(ret));
-  else ret=0;
-
-  if (curs) curs->close(curs);
-  return ret;
-}

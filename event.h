@@ -12,7 +12,7 @@
 
 /* Event structure. In the database data is written after
    this structure, and pointers contain offsets from the beginning of
-   the structure. This modification is done in event_put/event_print */
+   the structure. */
 typedef struct {
   int date1, date2;
   int ntags;  /* number of int tags */

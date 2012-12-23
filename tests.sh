@@ -49,25 +49,24 @@ check 1 "22 root can't be deactivated" "root" "123" user_off root
 check 1 "23 sla deactivated"            "sla" "123" user_chpwd sla 234
 check 1 "24 deactivated!"               "sla" "123" user_check
 check 0 "25 sla activated"             "root" "123" user_on sla
-check 0 "26 sla chpwd"                  "sla" "123" user_chpwd sla 234
+check 1 "26 sla chpwd"                  "sla" "123" user_chpwd sla 234
+check 0 "26 sla mypwd"                  "sla" "123" user_mypwd 234
 check 1 "27 permission denied"          "sla" "234" user_chpwd root 234
 check 0 "28 sla chpwd by root"         "root" "123" user_chpwd sla 123
 
-echo "======== Groups ========"
+echo "======== levels ========"
 
-check 0 "sla added to user_edit"    "root" "123" group_add sla user_edit
-check 1 "sla already in user_edit"  "root" "123" group_add sla user_edit
-check 0 "sla added to user_edit1"   "root" "123" group_add sla user_edit1
-check 0 "sla1 created"               "sla" "123" user_add sla1 123
-check 1 "permission denied"          "sla" "123" user_chpwd sla1 234
-check 0 "sla del from user_edit1"    "sla" "123" group_del sla user_edit1
-check 0 "sla1 add to user_edit1"     "sla" "123" group_add sla1 user_edit1
-check 1 "no group"                   "sla" "123" group_del sla user_edit2
-check 1 "permission denied"         "sla1" "123" group_del sla1 user_edit1
+check 0 "root: sla lvl -> 99"       "root" "123" user_chlvl sla 99
+check 0 "sla: sla1 created"          "sla" "123" user_add sla1 123
+check 1 "sla: chpwd"                 "sla" "123" user_chpwd sla1 234
+check 0 "sla: sla1 lvl -> 99"        "sla" "123" user_chlvl sla1 99
+check 1 "sla: root lvl -> 99"        "sla" "123" user_chlvl root 99
+check 0 "sla: sla lvl -> 98"         "sla" "123" user_chlvl sla 98
+check 1 "permission denied"          "sla" "123" l sla1 user_edit1
 check 1 "permission denied"         "sla1" "123" group_del sla  user_edit
-check 1 "permission denied"          "sla" "123" user_del sla1
-check 1 "permission denied"         "sla1" "123" user_del sla1
-check 0 "sla1 deleted"              "root" "123" user_del sla1
+check 1 "sla: user_del"              "sla" "123" user_del sla1
+check 1 "sla1: user_del"            "sla1" "123" user_del sla
+check 0 "root: sla1 deleted"        "root" "123" user_del sla1
 
 echo "======== Events ========"
 check 1 "new event - bad args" "sla" "123" event_new "title\ntitle" "<body1>\nbody2"\

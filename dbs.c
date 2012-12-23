@@ -58,11 +58,10 @@ int
 databases_open(dbs_t *dbs, int flags){
   return
     open_database(&(dbs->users),  DEFAULT_HOMEDIR "/users",  stderr, flags, 0) ||
-    open_database(&(dbs->groups), DEFAULT_HOMEDIR "/groups", stderr, flags, 1) ||
     open_database(&(dbs->log),    DEFAULT_HOMEDIR "/log",    stderr, flags, 0) ||
     open_database(&(dbs->events), DEFAULT_HOMEDIR "/events", stderr, flags, 0) ||
-    open_database(&(dbs->links),  DEFAULT_HOMEDIR "/links",  stderr, flags, 0) ||
-    open_database(&(dbs->tracks), DEFAULT_HOMEDIR "/tracks", stderr, flags, 0) ||
+    open_database(&(dbs->links),  DEFAULT_HOMEDIR "/links",  stderr, flags, 1) ||
+    open_database(&(dbs->tracks), DEFAULT_HOMEDIR "/tracks", stderr, flags, 1) ||
     0;
 }
 
@@ -82,7 +81,6 @@ int
 databases_close(dbs_t *dbs){
     int ret = 0;
     ret = close_database(dbs->users)  || ret;
-    ret = close_database(dbs->groups) || ret;
     ret = close_database(dbs->events) || ret;
     ret = close_database(dbs->links)  || ret;
     ret = close_database(dbs->tracks) || ret;

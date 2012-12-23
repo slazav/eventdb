@@ -8,57 +8,50 @@
 #define ACT_RO 0
 #define ACT_RW 1
 
-#define ACT_NOAUTH 0
-#define ACT_AUTH 1
-
 typedef struct {
   const char * cmd_name; /* command line name */
   action_func * func; /* action function (see actions.c) */
   int db_access;      /* ACT_RO/ACT_RW */
-  int need_auth;      /* ACT_NOAU/ACT_AUTH do authentication or not */
+  int level;          /* LVL_NOAUTH, LVL_NORM, LVL_ADMIN, LVL_ROOT */
   int add_args;       /* number of additional arguments */
   int protect_arg;    /* don't log argument (passwords) -- not working!*/
   const char * arg_names, *description;
 } action_t;
 
 const action_t actions[] = {
-  {"user_check",  &do_user_check,  ACT_RO, ACT_AUTH, 0,-1,
+  {"user_check",  &do_user_check,  ACT_RO, LVL_NORM, 0,-1,
      "no argumens", "Check that caller is active and password is ok"},
-  {"root_add",    &do_root_add,    ACT_RW, ACT_NOAUTH, 1, 0,
+  {"root_add",    &do_root_add,    ACT_RW, LVL_NOAUTH, 1, 0,
      "<pwd>", "Add superuser (if it does not exists, for everybody)"},
-  {"user_add",    &do_user_add,    ACT_RW, ACT_AUTH, 2, 1,
+  {"user_add",    &do_user_add,    ACT_RW, LVL_ADMIN, 2, 1,
      "<user> <pwd>", "Add user (for root and user_edit group)"},
-  {"user_del",    &do_user_del,    ACT_RW, ACT_AUTH, 1,-1,
+  {"user_del",    &do_user_del,    ACT_RW, LVL_ROOT, 1,-1,
      "<user>", "Delete user (for root only)"},
-  {"user_on",     &do_user_on,     ACT_RW, ACT_AUTH, 1,-1,
+  {"user_on",     &do_user_on,     ACT_RW, LVL_ADMIN, 1,-1,
      "<user>", "Activate user (for root and user_edit group)"},
-  {"user_off",    &do_user_off,    ACT_RW, ACT_AUTH, 1,-1,
+  {"user_off",    &do_user_off,    ACT_RW, LVL_ADMIN, 1,-1,
      "<user>", "Deactivate user (for root and user_edit group)"},
-  {"user_chpwd",  &do_user_chpwd,  ACT_RW, ACT_AUTH, 2, 1,
+  {"user_chlvl",  &do_user_chlvl,  ACT_RW, LVL_ADMIN, 2, 1,
+     "<user> <pwd>","Change password (for root)"},
+  {"user_chpwd",  &do_user_chpwd,  ACT_RW, LVL_ADMIN, 2, 1,
      "<user> <pwd>","Change password (for user itself and root)"},
-  {"user_list",   &do_user_list,   ACT_RO, ACT_NOAUTH, 0,-1,
+  {"user_mypwd",  &do_user_mypwd,  ACT_RW, LVL_NORM, 1, 0,
+     "<user> <pwd>","Change password (for user itself and root)"},
+  {"user_list",   &do_user_list,   ACT_RO, LVL_NOAUTH, 0,-1,
      "no argumens", "List all users (with active status and groups)"},
-  {"user_dump",   &do_user_dump,   ACT_RO, ACT_AUTH, 0,-1,
+  {"user_dump",   &do_user_dump,   ACT_RO, LVL_ROOT, 0,-1,
      "no argumens", "List all users (all information, for root only)"},
-  {"user_show",   &do_user_show,   ACT_RO, ACT_NOAUTH, 1,-1,
+  {"user_show",   &do_user_show,   ACT_RO, LVL_NOAUTH, 1,-1,
      "<user>", "Show information about user"},
-  {"group_add",   &do_group_add,   ACT_RW, ACT_AUTH, 2,-1,
-     "<user> <group>", "Add user to the group (for root and user_edit group)"},
-  {"group_del",   &do_group_del,   ACT_RW, ACT_AUTH, 2,-1,
-     "<user> <group>", "Delete user from the group (for root and user_edit group)"},
-  {"group_check", &do_group_check, ACT_RO,  ACT_NOAUTH, 1,-1,
-     "<group>", "Check thet caller is in the group (no authentication!)"},
-  {"group_list",  &do_group_list,  ACT_RO, ACT_NOAUTH, 1,-1,
-     "<usr>", "Print all groups for specified user"},
-  {"event_new",   &do_event_new,   ACT_RW, ACT_AUTH, 7,-1,
+  {"event_new",   &do_event_new,   ACT_RW, LVL_NORM, 7,-1,
      "<title> <body> <people> <route> <date1> <date2> <tags>",
      "Add new event, print its id"},
-  {"event_put",   &do_event_put,   ACT_RW, ACT_AUTH, 8,-1,
+  {"event_put",   &do_event_put,   ACT_RW, LVL_NORM, 8,-1,
      "<id> <title> <body> <people> <route> <date1> <date2> <tags>",
      "Add new event, print its id"},
-  {"event_print", &do_event_print, ACT_RO, ACT_NOAUTH, 1,-1,
+  {"event_print", &do_event_print, ACT_RO, LVL_NOAUTH, 1,-1,
      "<id>", "Print event data"},
-  {"event_search",&do_event_search,ACT_RO, ACT_NOAUTH, 7,-1,
+  {"event_search",&do_event_search,ACT_RO, LVL_NOAUTH, 7,-1,
      "<title> <body> <people> <route> <date1> <date2> <tags>",
      "Find events"},
   {NULL, NULL, 0, 0, 0, 0, NULL, NULL}};
@@ -98,8 +91,8 @@ main(int argc, char **argv){
     flags = actions[i].db_access==ACT_RW? DB_CREATE:DB_RDONLY;
     if (databases_open(&dbs, flags)) exit(1);
 
-    /* Authentication */
-    ret = actions[i].need_auth ? user_check(&dbs, user, pwd) : 0;
+    /* Authentication and level checking */
+    ret = user_check(&dbs, user, pwd, actions[i].level);
 
     if (ret == 0) ret = (*actions[i].func)(&dbs, user, argc-4, argv+4);
     ret = ret || databases_close(&dbs);

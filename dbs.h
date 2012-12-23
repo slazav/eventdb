@@ -18,10 +18,7 @@
 
 typedef struct {
  DB * users;
- DB * groups;
-
  DB * log;
-
  DB * events;
  DB * links;
  DB * tracks;

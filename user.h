@@ -8,7 +8,7 @@
 
 /* structure for user database */
 typedef struct {
-  int  active;
+  int  active, level;
   unsigned char md5[MD5_DIGEST_LENGTH];
 } user_t;
 
@@ -33,12 +33,12 @@ int user_del(dbs_t *dbs, char * name);
 /* Check that user exists and active and password is correct.
    Return 0 on success, 1 on fail.
    Print "wrong user/password" or error message on errors. */
-int user_check(dbs_t *dbs, char * name, char * pwd);
+int user_check(dbs_t *dbs, char * name, char * pwd, int level);
 
 /* Add user. Return 0 on success, DB_KEYEXIST if user exists
    or other libdb error.
    Print error message on errors. */
-int user_add(dbs_t *dbs, char * name, char * pwd);
+int user_add(dbs_t *dbs, char * name, char * pwd, int level);
 
 /* Change user pussword. Return 0 on success,
    DB_KEYEMPTY if user does not exists or other libdb error.
@@ -50,6 +50,11 @@ int user_chpwd(dbs_t *dbs, char * name, char * pwd);
    Print error message on errors. */
 int user_chact(dbs_t *dbs, char * name, int act);
 
+/* Set user level. Return 0 on success,
+   DB_KEYEMPTY if user does not exists or other libdb error.
+   Print error message on errors. */
+int user_chlvl(dbs_t *dbs, char * name, int level);
+
 /* List all users. Returns 0 or libdb error.
    Print error message on errors.
    mode:
@@ -60,24 +65,5 @@ int user_list(dbs_t *dbs, int mode);
 
 /* The same but for a single user*/
 int user_show(dbs_t *dbs, char *name, int mode);
-
-
-/* Add user to a group. Return 0 on success,
-   DB_KEYEMPTY if user does not exists or other libdb error.
-   Print error message on errors. */
-int group_add(dbs_t *dbs, char * user, char * group);
-
-/* Remove user from the group. Return 0 on success. If user does not
-   exist or is not in the group do nothing, return also 0.
-   Print error message on errors. */
-int group_del(dbs_t *dbs, char * user, char * group);
-
-/* Check that user is in the group. Return 0 on success.
-   Print "user is not in the group" or error message on errors. */
-int group_check(dbs_t *dbs, char * user, char * group);
-
-/* List all groups for specified user. Returns 0 or libdb error.
-   Print error message on errors. */
-int group_list(dbs_t *dbs, char * user, char sep);
 
 #endif
