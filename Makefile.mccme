@@ -1,6 +1,6 @@
 LDLIBS=-ldb -lcrypto
 LDFLAGS=-L/usr/local/lib/db46
-CFLAGS=-DDB46=1 -DMCCME=1 -I/usr/local/include/db46
+CFLAGS=-DMCCME=1 -I/usr/local/include/db46
 
 
 OBJ=actions.o user.o eventdb.o dbs.o

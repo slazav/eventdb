@@ -9,7 +9,6 @@ open_database(DB **dbpp,       /* The DB handle that we are opening */
     FILE *error_file_pointer,  /* File where we want error messages sent */
     int flags, int dup)
 {
-
     DB *dbp;    /* For convenience */
     int ret;
 
@@ -57,51 +56,59 @@ open_database(DB **dbpp,       /* The DB handle that we are opening */
 /* opens all databases */
 int
 databases_open(dbs_t *dbs, int flags){
-    int ret;
+  return
+    open_database(&(dbs->users),  DEFAULT_HOMEDIR "/users",  stderr, flags, 0) ||
+    open_database(&(dbs->groups), DEFAULT_HOMEDIR "/groups", stderr, flags, 1) ||
+    open_database(&(dbs->log),    DEFAULT_HOMEDIR "/log",    stderr, flags, 1) ||
+    open_database(&(dbs->events), DEFAULT_HOMEDIR "/events", stderr, flags, 1) ||
+    open_database(&(dbs->links),  DEFAULT_HOMEDIR "/links",  stderr, flags, 1) ||
+    open_database(&(dbs->tracks), DEFAULT_HOMEDIR "/tracks", stderr, flags, 1) ||
+    0;
+}
 
-    /* Open the event database */
-    ret = open_database(&(dbs->events), DEFAULT_HOMEDIR "/events",
-                        stderr, flags, 0);
-    if (ret != 0) return ret;
-
-    /* Open the user database */
-    ret = open_database(&(dbs->users), DEFAULT_HOMEDIR "/users",
-                        stderr, flags, 0);
-    if (ret != 0) return ret;
-
-    /* Open the group database */
-    ret = open_database(&(dbs->groups), DEFAULT_HOMEDIR "/groups",
-                        stderr, flags, 1);
-    if (ret != 0) return ret;
-
-    return (0);
+int
+close_database(DB *dbp){ /* The DB handle that we are opening */
+  int ret;
+  if (dbp == NULL) return 0;
+  ret = dbp->close(dbp, 0);
+  if (ret != 0)
+    fprintf(stderr, "Error: database close failed: %s\n",
+      db_strerror(ret));
+  return ret;
 }
 
 /* Closes all the databases. */
 int
 databases_close(dbs_t *dbs){
-    int ret;
+    int ret = 0;
+    ret = close_database(dbs->users)  || ret;
+    ret = close_database(dbs->groups) || ret;
+    ret = close_database(dbs->events) || ret;
+    ret = close_database(dbs->links)  || ret;
+    ret = close_database(dbs->tracks) || ret;
+    return ret;
+}
 
-    if (dbs->events != NULL) {
-        ret = dbs->events->close(dbs->events, 0);
-        if (ret != 0)
-            fprintf(stderr, "Error: event database close failed: %s\n",
-               db_strerror(ret));
-    }
+/* create DBT object of various type */
 
-    if (dbs->users != NULL) {
-        ret = dbs->users->close(dbs->users, 0);
-        if (ret != 0)
-            fprintf(stderr, "Error: user database close failed: %s\n",
-              db_strerror(ret));
-    }
+DBT mk_empty_dbt(){
+  DBT ret;
+  memset(&ret, 0, sizeof(DBT));
+  return ret;
+}
 
-    if (dbs->groups != NULL) {
-        ret = dbs->groups->close(dbs->groups, 0);
-        if (ret != 0)
-            fprintf(stderr, "Error: groups database close failed: %s\n",
-              db_strerror(ret));
-    }
+DBT mk_int_dbt(int * i){
+  DBT ret;
+  memset(&ret, 0, sizeof(DBT));
+  ret.data = i;
+  ret.size = sizeof(int);
+  return ret;
+}
 
-    return (0);
+DBT mk_string_dbt(char * str){
+  DBT ret;
+  memset(&ret, 0, sizeof(DBT));
+  ret.data = str;
+  ret.size = strlen(str)+1;
+  return ret;
 }

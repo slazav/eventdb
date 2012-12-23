@@ -3,30 +3,6 @@
 
 /****************************************************************/
 
-DBT mk_empty_dbt(){
-  DBT ret;
-  memset(&ret, 0, sizeof(DBT));
-  return ret;
-}
-
-DBT mk_string_dbt(char * str){
-  DBT ret;
-  memset(&ret, 0, sizeof(DBT));
-  ret.data = str;
-  ret.size = strlen(str)+1;
-  return ret;
-}
-
-DBT mk_user_dbt(user_t * user){
-  DBT ret;
-  memset(&ret, 0, sizeof(DBT));
-  ret.size = sizeof(user_t);
-  ret.data = user;
-  return ret;
-}
-
-/****************************************************************/
-
 #define MAXNAME 30
 
 int
@@ -81,17 +57,16 @@ int
 user_put(dbs_t *dbs, user_t * user, char * name, int overwrite){
   int ret;
   DBT key = mk_string_dbt(name);
-  DBT val = mk_user_dbt(user);
+  DBT val;
+
+  memset(&val, 0, sizeof(DBT));
+  val.size = sizeof(user_t);
+  val.data = user;
 
   if (check_name(name)!=0) return 1;
 
-#ifdef DB46
   ret = dbs->users->put(dbs->users, NULL, &key, &val,
              overwrite? 0:DB_NOOVERWRITE);
-#else
-  ret = dbs->users->put(dbs->users, NULL, &key, &val,
-             overwrite? DB_OVERWRITE_DUP:DB_NOOVERWRITE);
-#endif
   if (ret!=0)
     fprintf(stderr, "Error: can't write user information: %s\n",
       db_strerror(ret));
@@ -231,13 +206,9 @@ int group_add(dbs_t *dbs, char * user, char * group){
 
   if (user_get(dbs, NULL, user)!=0) return 1;
 
-#ifdef DB46
   ret = dbs->groups->put(dbs->groups, NULL,
     &key, &val, DB_NODUPDATA);
-#else
-  ret = dbs->groups->put(dbs->groups, NULL,
-    &key, &val, DB_OVERWRITE_DUP);
-#endif
+
   if (ret!=0)
     fprintf(stderr, "Error: can't update group information: %s\n",
       db_strerror(ret));

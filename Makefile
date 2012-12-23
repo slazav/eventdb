@@ -1,5 +1,6 @@
 LDLIBS=-ldb -lcrypto
-eventdb: actions.o user.o eventdb.o dbs.o
+#CFLAGS=-g
+eventdb:  dbs.o user.o actions.o eventdb.o
 
 clean:
 	rm -f -- *.o eventdb

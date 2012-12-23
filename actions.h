@@ -3,9 +3,9 @@
 
 #include "dbs.h"
 
-typedef int(action_func)(dbs_t*, char*, char*, int, char **);
+typedef int(action_func)(dbs_t*, char*, int, char **);
 
-/* Second-level actions with permmision and data checking logic.
+/* Second-level actions with permmision checking logic.
    Authentication and number of arguments are checked on therd level... */
 
 extern action_func do_user_check, do_root_add, do_user_add, do_user_del,

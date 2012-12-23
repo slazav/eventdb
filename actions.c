@@ -7,12 +7,12 @@ char * user_edit_group = "user_edit";
 /*********************************************************************/
 
 int
-do_user_check(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_user_check(dbs_t * dbs, char * user, int argc, char **argv){
   return 0; /* auth check is performed outside */
 }
 
 int
-do_root_add(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_root_add(dbs_t * dbs, char * user, int argc, char **argv){
   char *new_pwd=argv[0];
   if ( user_get(dbs, NULL, superuser)==0 ){ /* extra check, maybe not needed */
     fprintf(stderr, "Error: superuser exists\n");
@@ -22,7 +22,7 @@ do_root_add(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
 }
 
 int
-do_user_add(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_user_add(dbs_t * dbs, char * user, int argc, char **argv){
   char *new_usr=argv[0];
   char *new_pwd=argv[1];
 
@@ -34,7 +34,7 @@ do_user_add(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
 }
 
 int
-do_user_del(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_user_del(dbs_t * dbs, char * user, int argc, char **argv){
   char *del_usr = argv[0];
 
   /* only root */
@@ -44,7 +44,7 @@ do_user_del(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
 }
 
 int
-do_user_on(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_user_on(dbs_t * dbs, char * user, int argc, char **argv){
   char *mod_usr = argv[0];
 
   /* only root or users from user_edit_group */
@@ -55,7 +55,7 @@ do_user_on(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
 }
 
 int
-do_user_off(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_user_off(dbs_t * dbs, char * user, int argc, char **argv){
   char *mod_usr = argv[0];
 
   /* root must be active */
@@ -72,7 +72,7 @@ do_user_off(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
 }
 
 int
-do_user_chpwd(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_user_chpwd(dbs_t * dbs, char * user, int argc, char **argv){
   char *mod_usr = argv[0];
   char *mod_pwd = argv[1];
 
@@ -88,12 +88,12 @@ do_user_chpwd(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
 
 
 int
-do_user_list(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_user_list(dbs_t * dbs, char * user, int argc, char **argv){
   return user_list(dbs, 1);
 }
 
 int
-do_user_dump(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_user_dump(dbs_t * dbs, char * user, int argc, char **argv){
 
   /* only root */
   if (strcmp(user, superuser)!=0) return 1;
@@ -102,7 +102,7 @@ do_user_dump(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
 }
 
 int
-do_user_show(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_user_show(dbs_t * dbs, char * user, int argc, char **argv){
   char *name = argv[0];
   return user_show(dbs, name, 1);
 }
@@ -110,7 +110,7 @@ do_user_show(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
 /*********************************************************************/
 
 int
-do_group_add(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_group_add(dbs_t * dbs, char * user, int argc, char **argv){
   char *mod_usr = argv[0];
   char *group   = argv[1];
 
@@ -122,7 +122,7 @@ do_group_add(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
 }
 
 int
-do_group_del(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_group_del(dbs_t * dbs, char * user, int argc, char **argv){
   char *mod_usr = argv[0];
   char *group   = argv[1];
 
@@ -134,13 +134,13 @@ do_group_del(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
 }
 
 int
-do_group_check(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_group_check(dbs_t * dbs, char * user, int argc, char **argv){
   char *group = argv[0];
   return group_check(dbs, user, group);
 }
 
 int
-do_group_list(dbs_t * dbs, char * user, char * pwd, int argc, char **argv){
+do_group_list(dbs_t * dbs, char * user, int argc, char **argv){
   char *mod_usr = argv[0];
   return group_list(dbs, mod_usr,'\n');
 }

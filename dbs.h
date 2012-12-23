@@ -17,9 +17,14 @@
 #endif
 
 typedef struct {
- DB * events;
  DB * users;
  DB * groups;
+
+ DB * log;
+
+ DB * events;
+ DB * links;
+ DB * tracks;
 } dbs_t;
 
 /* Open/close all databases. Print msg to stderr and return
@@ -27,5 +32,9 @@ typedef struct {
    Open flags must be DB_CREATE or DB_RDONLY */
 int databases_open(dbs_t *, int flags);
 int databases_close(dbs_t *);
+
+DBT mk_empty_dbt();
+DBT mk_int_dbt(int * i);
+DBT mk_string_dbt(char * str);
 
 #endif

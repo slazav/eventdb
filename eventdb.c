@@ -90,8 +90,8 @@ main(int argc, char **argv){
     /* Authentication */
     ret = actions[i].need_auth ? user_check(&dbs, user, pwd) : 0;
 
-    if (ret == 0) ret = (*actions[i].func)(&dbs, user, pwd, argc-4, argv+4);
-    databases_close(&dbs);
+    if (ret == 0) ret = (*actions[i].func)(&dbs, user, argc-4, argv+4);
+    ret = ret || databases_close(&dbs);
     return ret;
   }
 
