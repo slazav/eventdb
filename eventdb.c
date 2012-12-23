@@ -50,7 +50,18 @@ const action_t actions[] = {
      "<group>", "Check thet caller is in the group (no authentication!)"},
   {"group_list",  &do_group_list,  ACT_RO, ACT_NOAUTH, 1,-1,
      "<usr>", "Print all groups for specified user"},
-    {NULL, NULL, 0, 0, 0, 0, NULL, NULL}};
+  {"event_new",   &do_event_new,   ACT_RW, ACT_AUTH, 7,-1,
+     "<title> <body> <people> <route> <date1> <date2> <tags>",
+     "Add new event, print its id"},
+  {"event_put",   &do_event_put,   ACT_RW, ACT_AUTH, 8,-1,
+     "<id> <title> <body> <people> <route> <date1> <date2> <tags>",
+     "Add new event, print its id"},
+  {"event_print", &do_event_print, ACT_RO, ACT_NOAUTH, 1,-1,
+     "<id>", "Print event data"},
+  {"event_search",&do_event_search,ACT_RO, ACT_NOAUTH, 7,-1,
+     "<title> <body> <people> <route> <date1> <date2> <tags>",
+     "Find events"},
+  {NULL, NULL, 0, 0, 0, 0, NULL, NULL}};
 
 #define MAXPWD 200
 main(int argc, char **argv){

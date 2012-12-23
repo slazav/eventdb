@@ -69,3 +69,28 @@ check 1 "permission denied"          "sla" "123" user_del sla1
 check 1 "permission denied"         "sla1" "123" user_del sla1
 check 0 "sla1 deleted"              "root" "123" user_del sla1
 
+echo "======== Events ========"
+check 1 "new event - bad args" "sla" "123" event_new "title\ntitle" "<body1>\nbody2"\
+   "people" "route" "20121201" "20121203"
+check 1 "new event - bad date1" "sla" "123" event_new "title\ntitle" "<body1>\nbody2"\
+   "people" "route" "b" "20121203" "100"
+check 1 "new event - bad date2" "sla" "123" event_new "title\ntitle" "<body1>\nbody2"\
+   "people" "route" "20121201" "a" "100"
+check 1 "new event - bad tags" "sla" "123" event_new "title\ntitle" "<body1>\nbody2"\
+   "people" "route" "20121201" "20121203" "a,b"
+
+check 0 "new event by sla" "sla" "123" event_new "title\ntitle1" "<body1>
+body2" "people" "route" "20121201" "20121203" "123,124,125,126"
+check 0 "new event by sla" "sla" "123" event_new "title\ntitle2" "<body1>
+body2" "people" "route" "20121205" "20121207" "123,124,125,126"
+check 0 "print event" "" "" event_print "1"
+
+check 0 "edit event by sla" "sla" "123" event_put 1 "title\ntitle1e" "<body1_n>
+body2" "people" "route" "20121201" "20121205" "123,222"
+check 0 "print event" "" "" event_print "1"
+
+echo "======== Search ========"
+
+check 0 "search" "" "" event_search "tit" "" "" "" "20121206" "-1" "124"
+
+
