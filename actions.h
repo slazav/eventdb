@@ -8,10 +8,11 @@
 #define LVL_NORM    0
 #define LVL_NOAUTH -1
 
-typedef int(action_func)(dbs_t*, char*, int, char **);
+/* Standard actions with string parameter parsing and some
+   permision checking logic. Authentication, user level and
+   number of arguments are checked in the main() function. */
 
-/* Second-level actions with some permision checking logic.
-   Authentication and number of arguments are checked on therd level... */
+typedef int(action_func)(dbs_t*, char*, char **);
 
 extern action_func do_user_check, do_root_add, do_user_add, do_user_del,
                    do_user_on, do_user_off, do_user_chpwd, do_user_chlvl,

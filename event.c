@@ -95,11 +95,11 @@ void
 print_event(int id, event_t * ev){
   int i;
   printf("<event id=%d date1=%d date2=%d>\n", id, ev->date1, ev->date2);
-  printf("<title>%s</title>\n",  ev->title);
-  printf("<body>%s</body>\n",    ev->body);
-  printf("<people>%s</people>\n",ev->people);
-  printf("<route>%s</route>\n",  ev->route);
-  printf("<tags>");
+  printf(" <title>%s</title>\n",  ev->title);
+  printf(" <body>%s</body>\n",    ev->body);
+  printf(" <people>%s</people>\n",ev->people);
+  printf(" <route>%s</route>\n",  ev->route);
+  printf(" <tags>");
   for (i=0; i<ev->ntags; i++) printf("%s%d", i==0?"":",", ev->tags[i]);
   printf("</tags>\n");
   printf("</event>\n");

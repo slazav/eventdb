@@ -4,19 +4,20 @@
 #include <string.h>
 
 char * superuser = "root";
-char * user_edit_group = "user_edit";
 
-#define MAX_TAGS 256
+/* just a tmp buffer size: */
+#define MAX_TAGS 1024
 
 /*********************************************************************/
 
 int
-do_user_check(dbs_t * dbs, char * user, int argc, char **argv){
-  return 0; /* auth check is performed outside */
+do_user_check(dbs_t * dbs, char * user, char **argv){
+  /* auth check is performed outside */
+  return user_show(dbs, user, USR_SHOW_LEVEL);
 }
 
 int
-do_root_add(dbs_t * dbs, char * user, int argc, char **argv){
+do_root_add(dbs_t * dbs, char * user, char **argv){
   char *new_pwd=argv[0];
   if ( user_get(dbs, NULL, superuser)==0 ){ /* extra check, maybe not needed */
     fprintf(stderr, "Error: superuser exists\n");
@@ -26,12 +27,12 @@ do_root_add(dbs_t * dbs, char * user, int argc, char **argv){
 }
 
 int
-do_user_add(dbs_t * dbs, char * user, int argc, char **argv){
+do_user_add(dbs_t * dbs, char * user, char **argv){
   return user_add(dbs, argv[0], argv[1], LVL_NORM);
 }
 
 int
-do_user_del(dbs_t * dbs, char * user, int argc, char **argv){
+do_user_del(dbs_t * dbs, char * user, char **argv){
   char *mod_usr = argv[0];
 
   if (strcmp(mod_usr, superuser)==0){
@@ -42,12 +43,12 @@ do_user_del(dbs_t * dbs, char * user, int argc, char **argv){
 }
 
 int
-do_user_on(dbs_t * dbs, char * user, int argc, char **argv){
+do_user_on(dbs_t * dbs, char * user, char **argv){
   return user_chact(dbs, argv[0], 1);
 }
 
 int
-do_user_off(dbs_t * dbs, char * user, int argc, char **argv){
+do_user_off(dbs_t * dbs, char * user, char **argv){
   char *mod_usr = argv[0];
 
   if (strcmp(mod_usr, superuser)==0){
@@ -58,7 +59,7 @@ do_user_off(dbs_t * dbs, char * user, int argc, char **argv){
 }
 
 int
-do_user_chlvl(dbs_t * dbs, char * user, int argc, char **argv){
+do_user_chlvl(dbs_t * dbs, char * user, char **argv){
   char *mod_usr = argv[0];
   int level = atoi(argv[1]);
 
@@ -73,7 +74,7 @@ do_user_chlvl(dbs_t * dbs, char * user, int argc, char **argv){
 }
 
 int
-do_user_chpwd(dbs_t * dbs, char * user, int argc, char **argv){
+do_user_chpwd(dbs_t * dbs, char * user, char **argv){
   char *mod_usr = argv[0];
   char *mod_pwd = argv[1];
 
@@ -85,23 +86,23 @@ do_user_chpwd(dbs_t * dbs, char * user, int argc, char **argv){
 }
 
 int
-do_user_mypwd(dbs_t * dbs, char * user, int argc, char **argv){
+do_user_mypwd(dbs_t * dbs, char * user, char **argv){
   return user_chpwd(dbs, user, argv[0]);
 }
 
 int
-do_user_list(dbs_t * dbs, char * user, int argc, char **argv){
-  return user_list(dbs, 1);
+do_user_list(dbs_t * dbs, char * user, char **argv){
+  return user_list(dbs, USR_SHOW_NORM);
 }
 
 int
-do_user_dump(dbs_t * dbs, char * user, int argc, char **argv){
-  return user_list(dbs, 2);
+do_user_dump(dbs_t * dbs, char * user, char **argv){
+  return user_list(dbs, USR_SHOW_FULL);
 }
 
 int
-do_user_show(dbs_t * dbs, char * user, int argc, char **argv){
-  return user_show(dbs, argv[0], 1);
+do_user_show(dbs_t * dbs, char * user, char **argv){
+  return user_show(dbs, argv[0], USR_SHOW_NORM);
 }
 
 /*********************************************************************/
@@ -145,7 +146,7 @@ event_parse(char **argv, event_t * event, int tags[MAX_TAGS]){
 }
 
 int
-do_event_new(dbs_t * dbs, char * user, int argc, char **argv){
+do_event_new(dbs_t * dbs, char * user, char **argv){
   int tags[MAX_TAGS];
   event_t event;
   return event_parse(argv, &event, tags) ||
@@ -153,7 +154,7 @@ do_event_new(dbs_t * dbs, char * user, int argc, char **argv){
 }
 
 int
-do_event_put(dbs_t * dbs, char * user, int argc, char **argv){
+do_event_put(dbs_t * dbs, char * user, char **argv){
   int tags[MAX_TAGS];
   event_t event;
   int id = atoi(argv[0]);
@@ -166,19 +167,19 @@ do_event_put(dbs_t * dbs, char * user, int argc, char **argv){
 }
 
 int
-do_event_del(dbs_t * dbs, char * user, int argc, char **argv){
+do_event_del(dbs_t * dbs, char * user, char **argv){
   int id = atoi(argv[0]);
   return event_del(dbs, id);
 }
 
 int
-do_event_print(dbs_t * dbs, char * user, int argc, char **argv){
+do_event_print(dbs_t * dbs, char * user, char **argv){
   int id = atoi(argv[0]);
   return event_print(dbs, id);
 }
 
 int
-do_event_search(dbs_t * dbs, char * user, int argc, char **argv){
+do_event_search(dbs_t * dbs, char * user, char **argv){
   int tags[MAX_TAGS];
   event_t event;
   return event_parse(argv, &event, tags) ||

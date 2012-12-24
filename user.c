@@ -99,6 +99,7 @@ user_check(dbs_t *dbs, char * name, char *pwd, int level){
       memcmp(MD5(pwd, strlen(pwd),NULL),
                 user.md5, sizeof(user.md5))==0) return 0;
 
+//  sleep(1);
   fprintf(stderr, "Error: wrong user/password\n");
   return 1;
 }
@@ -142,9 +143,29 @@ user_chlvl(dbs_t *dbs, char * name, int level){
   return user_put(dbs, &user, name, 1);
 }
 
+void
+my_show_user(char * name, user_t *user, int mode){
+  int i;
+  switch (mode){
+    case USR_SHOW_NORM: /* name:activity:level */
+      printf("%s:%d:%d", name, user->active, user->level);
+      break;
+    case USR_SHOW_NAME:  /* list only active users */
+      if (user->active) printf("%s", name);
+      break;
+    case USR_SHOW_LEVEL:  /* user level */
+      printf("%d", user->active? user->level:-1);
+      break;
+    case USR_SHOW_FULL: /* all information: name:activity:level:md5 */
+      printf("%s:%d:%d:", name, user->active, user->level);
+      for (i=0; i<sizeof(user->md5); i++) printf("%02X", user->md5[i]);
+      break;
+  }
+  printf("\n");
+}
+
 int
 user_list(dbs_t *dbs, int mode){
-
   int ret;
   DBT key = mk_empty_dbt();
   DBT val = mk_empty_dbt();
@@ -153,24 +174,9 @@ user_list(dbs_t *dbs, int mode){
   dbs->users->cursor(dbs->users, NULL, &curs, 0);
 
   /* Iterate over the database, retrieving each record in turn. */
-  while ((ret = curs->get(curs, &key, &val, DB_NEXT)) == 0) {
-    int i;
-    user_t *user=(user_t *)(val.data);
+  while ((ret = curs->get(curs, &key, &val, DB_NEXT)) == 0)
+    my_show_user((char *)(key.data), (user_t *)(val.data), mode);
 
-    switch (mode){
-      case 0:  /* list only active users */
-        printf("%s", (char *)(key.data));
-        break;
-      case 1: /* list names, activity, level */
-        printf("%s:%d:%d", (char *)(key.data), user->active, user->level);
-        break;
-      case 2: /* list full information (with md5) */
-        printf("%s:%d:%d:", (char *)(key.data), user->active, user->level);
-        for (i=0; i<sizeof(user->md5); i++) printf("%02X", user->md5[i]);
-        break;
-    }
-    printf("\n");
-  }
   if (ret != DB_NOTFOUND)
     fprintf(stderr, "Error: can't get user list: %s\n",
       db_strerror(ret));
@@ -182,23 +188,9 @@ user_list(dbs_t *dbs, int mode){
 
 int
 user_show(dbs_t *dbs, char *name, int mode){
-  int ret, i;
+  int ret;
   user_t user;
   if ((ret=user_get(dbs, &user, name))!=0) return ret;
-
-  switch (mode){
-    case 0:  /* list only active users */
-      printf("%s", name);
-      break;
-    case 1: /* list names, activity, groups */
-      printf("%s:%d:%d", name, user.active, user.level);
-      break;
-    case 2: /* list full information (with md5) */
-      printf("%s:%d:%d:", name, user.active, user.level);
-      for (i=0; i<sizeof(user.md5); i++) printf("%02X", user.md5[i]);
-      break;
-  }
-  printf("\n");
+  my_show_user(name, &user, mode);
   return ret;
 }
-

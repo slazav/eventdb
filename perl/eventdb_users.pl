@@ -19,15 +19,6 @@ sub print_err{
     <tr><td bgcolor="#FFDDDD"><h3 color=red>$err</h3></td></tr>*;
 }
 
-### is user in the user_edit group?
-sub check_user_edit{
-  my $usr = shift;
-  return 1 if $usr eq 'root';
-  return 0 if $usr eq '';
-  my $out=query('','','user_show', $usr);
-  return $out=~/$usr:\d.*(\s|:)user_edit(\s|$)/;
-}
-
 ### query to eventdb (result is returned, error is printed)
 sub query{
   my $user   = shift;
@@ -48,45 +39,48 @@ sub query{
 
 
 ### get session, print html headers
-my ($user, $pass) = eventdb::login();
+my ($user, $pass, $level) = eventdb::login();
 print qq*<html><body>
   <table border=1 cellpadding=10 cellspacing=0>
   <tr><td align=right bgcolor="#EECCEE">*;
 print eventdb::form($user);
-print qq*
-  </tr></td>*;
+print qq*</td></tr>*;
 
 ### do some actions (and print errors if needed)
 my $usr=param('usr') || '';
 query($user, $pass, 'user_on',  $usr) if defined param('UserOn');
 query($user, $pass, 'user_off', $usr) if defined param('UserOff');
 query($user, $pass, 'user_add',
-  param('new_name') || '', param('new_pass') || '' ) if defined param('UserAdd');
-query($user, $pass, 'group_add',
-  $usr, param('group') || '') if defined param('GroupAdd');
-query($user, $pass, 'group_del',
-  $usr, param('group') || '') if defined param('GroupDel');
+  param('new_name') || '', param('new_pass') || '' )
+    if defined param('UserAdd');
+
+my $lvl = param('new_level') || 0;
+query($user, $pass, 'user_chlvl', $usr, $lvl) if defined param('ChLevel');
+
 if (defined param('UserChPwd')){
   my $new_pwd=param('new_pwd') || '';
   if ($new_pwd=~/^.{0,4}$/){
     print_err("Error: password is too short!");
   }
   else{
-    query($user, $pass, 'user_chpwd', $usr, $new_pwd)
-      and eventdb::chpwd($new_pwd) and $pass=$new_pwd;
+    if ($user eq $usr){
+      query($user, $pass, 'user_mypwd', $new_pwd)
+        and eventdb::chpwd($new_pwd) and $pass=$new_pwd;}
+    else{
+      query($user, $pass, 'user_chpwd', $usr, $new_pwd);}
   }
 }
 
-my $can_edit = check_user_edit($user);
 
 if ($usr){ ## show one user
   my $out = query($user, $pass, 'user_show',  $usr);
-  my ($name, $act, $groups) = split(/:/, $out);
-  $groups=~s/^\s+//g; $groups=~s/\s+$//g;
+  my ($name, $act, $l) = split(/:/, $out);
+  my $l1='';
+  $l1 = 'admin' if ($l >= $eventdb::lvl_admin);
+
   my $act_txt = $act? "да":"нет";
   my $btn_txt = $act? "деактивировать":"активировать";
   my $btn_val = $act? "UserOff":"UserOn";
-  $groups = '-- нет --' if !$groups;
 
   print qq*
     <tr><td bgcolor="#FFEEFF">
@@ -97,17 +91,21 @@ if ($usr){ ## show one user
     print qq*
       <p>Активность: <b>$act_txt</b>*;
     print qq*
-        <input type="submit" value="$btn_txt" name="$btn_val"/>* if $can_edit;
+        <input type="submit" value="$btn_txt" name="$btn_val"/>*
+          if $level >= $eventdb::lvl_admin;
     print qq*
-      <p>Группы: <b>$groups</b>*;
+      <p>Права: <b>$l1</b>*;
     print qq*
-      <p>группа: <input name="group" type="text" maxlength="15" size="10"/>
-        <input type="submit" value="добавить" name="GroupAdd"/>
-        <input type="submit" value="удалить" name="GroupDel"/>* if $can_edit;
+      <p>изменить права: <select name="new_level">
+        <option name=normal value=0> normal </option>
+        <option name=admin  value=99> admin </option></select>
+        <input type="submit" value="ок" name="ChLevel"/>*
+          if $level >= $eventdb::lvl_admin;
   }
   print qq*
     <p>Сменить пароль: <input name="new_pwd" type="password" maxlength="15" size="10"/>
-      <input type="submit" value="сменить" name="UserChPwd"/>* if $user eq 'root' || $user eq $usr;
+      <input type="submit" value="сменить" name="UserChPwd"/>*
+         if $level >= $eventdb::lvl_admin || $user eq $usr;
   print qq*
     </form>
     <hr width="70%">
@@ -122,12 +120,12 @@ else{ ## show user list
     <h3>Список пользователей:</h3>
     <ul>*;
   foreach (@users){
-    my ($name, $act, $groups) = split(/:/, $_);
+    my ($name, $act, $l) = split(/:/, $_);
     my $nt=$name;
     $nt="<s>$nt</s>" if $act==0;
-    $groups=~s/^\s+//g; $groups=~s/\s+$//g;
-    $groups=" (группы: <b>$groups</b>)" if $groups;
-    print "     <li><a href=\"eventdb_users.pl?usr=$name\">$nt</a> $groups\n";
+    my $l1='';
+    $l1 = ' -- admin' if ($l >= $eventdb::lvl_admin);
+    print "     <li><a href=\"eventdb_users.pl?usr=$name\">$nt</a>$l1\n";
   }
   print qq*
     </ul>*;
@@ -138,7 +136,7 @@ else{ ## show user list
     имя: <input name="new_name" type="text" maxlength="15" size="10"/>
     пароль: <input name="new_pass" type="password" maxlength="15" size="10"/>
     <input type="submit" value="добавить" name="UserAdd"/>
-    </form>* if $can_edit;
+    </form>* if $level >= $eventdb::lvl_admin;
 }
 
 ## print html tail

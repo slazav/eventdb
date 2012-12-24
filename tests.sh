@@ -56,6 +56,7 @@ check 0 "28 sla chpwd by root"         "root" "123" user_chpwd sla 123
 
 echo "======== levels ========"
 
+check 1 "root: sla lvl -> aaa"      "root" "123" user_chlvl sla aaa
 check 0 "root: sla lvl -> 99"       "root" "123" user_chlvl sla 99
 check 0 "sla: sla1 created"          "sla" "123" user_add sla1 123
 check 0 "sla: sla1 chpwd"            "sla" "123" user_chpwd sla1 234

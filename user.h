@@ -57,13 +57,18 @@ int user_chlvl(dbs_t *dbs, char * name, int level);
 
 /* List all users. Returns 0 or libdb error.
    Print error message on errors.
-   mode:
-   0: only names of active users
-   1: all users with "active" flag
-   2: dump all information (including md5) */
+   modes:
+    USR_SHOW_NORM:  name:activity:level
+    USR_SHOW_NAME:  list only active user names
+    USR_SHOW_LEVEL: user level (-1 if user not active)
+    USR_SHOW_FULL:  all information: name:activity:level:md5 */
+#define USR_SHOW_NORM  0
+#define USR_SHOW_NAME  1
+#define USR_SHOW_LEVEL 2
+#define USR_SHOW_FULL  100
 int user_list(dbs_t *dbs, int mode);
 
-/* The same but for a single user*/
+/* Print user information (same modes) */
 int user_show(dbs_t *dbs, char *name, int mode);
 
 #endif
