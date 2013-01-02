@@ -5,8 +5,8 @@
 
 #define LVL_ROOT  100
 #define LVL_ADMIN  99
-#define LVL_NORM    0
-#define LVL_NOAUTH -1
+#define LVL_NORM    1
+#define LVL_NOAUTH  0
 
 /* Standard actions with string parameter parsing and some
    permision checking logic. Authentication, user level and

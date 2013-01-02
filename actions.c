@@ -67,9 +67,14 @@ do_user_chlvl(dbs_t * dbs, char * user, char **argv){
     fprintf(stderr, "Error: can't change superuser level\n");
     return 1;
   }
-
-  if (level >= LVL_ROOT) level = LVL_ROOT-1; /* can't set root level! */
-  if (level <  LVL_NORM) level = LVL_NORM;
+  if (level >= LVL_ROOT){
+    fprintf(stderr, "Error: level is too high\n");
+    return 1;
+  }
+  if (level <  LVL_NORM){
+    fprintf(stderr, "Error: wrong level\n");
+    return 1;
+  }
   return user_chlvl(dbs, mod_usr, level);
 }
 
