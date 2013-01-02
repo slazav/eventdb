@@ -25,26 +25,26 @@ typedef struct {
 
 /* Write event to the database.
    Return 0 on success. Print error message on errors. */
-int event_put(dbs_t *dbs, int id, event_t * event, int overwrite);
+int event_put(unsigned int id, event_t * event, int overwrite);
 
 /* Write new event to the database, print id to stdout.
    Return 0 on success. Print error message on errors. */
-int event_new(dbs_t *dbs, event_t * event);
+int event_new(event_t * event);
 
 /* Delete event from the database.
    Return 0 on success. Print error message on errors. */
-int event_del(dbs_t *dbs, int id);
+int event_del(unsigned int id);
 
 /* Get event from the database and print it to stdout in
    xml-like format.
    Return 0 on success. Print error message on errors. */
-int event_print(dbs_t *dbs, int id);
+int event_print(unsigned int id);
 
 /* Search events corresponding to the mask and print them to
    stdout in xml-like format.
    Use date1=-1
    Return 0 on success. Print error message on errors. */
-int event_search(dbs_t *dbs, event_t * mask);
+int event_search(event_t * mask);
 
 
 #endif

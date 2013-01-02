@@ -12,7 +12,7 @@
    permision checking logic. Authentication, user level and
    number of arguments are checked in the main() function. */
 
-typedef int(action_func)(dbs_t*, char*, char **);
+typedef int(action_func)(char*, char **);
 
 extern action_func do_user_check, do_root_add, do_user_add, do_user_del,
                    do_user_on, do_user_off, do_user_chpwd, do_user_chlvl,
@@ -20,5 +20,7 @@ extern action_func do_user_check, do_root_add, do_user_add, do_user_del,
 
 extern action_func do_event_new, do_event_put, do_event_del,
                    do_event_print, do_event_search;
+
+extern action_func do_log_new, do_log_print, do_log_tsearch;
 
 #endif

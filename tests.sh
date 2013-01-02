@@ -26,7 +26,7 @@ check(){
 echo "======== Create User ========"
 
 check 1 "01 only root can be created" "" "" user_add sla  123
-check 1 "02 showr password"           "" "" root_add 123
+check 1 "02 short password"           "" "" root_add 123
 check 0 "02 root created"             "" "" root_add 1231
 check 1 "03 permission denied"        "" "" user_add sla  1231
 check 1 "04 permission denied"        "" "" user_add root 1231

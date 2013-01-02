@@ -2,25 +2,6 @@
 #include "string.h"
 #include "stdlib.h"
 
-
-
-/*********************************************************************/
-/* Replace '<' and '>' by '[' and ']' in the string.
-   Replace '\n' by ' ' if rem_nl!=0 */
-# define REMOVE_NL 0
-# define KEEP_NL   1
-void
-remove_html(char * str, int rem_nl){
-  int i;
-  for (i=0; i<strlen(str); i++){
-    if (str[i]=='<') str[i]='[';
-    if (str[i]=='>') str[i]=']';
-    if (rem_nl && str[i]=='\n') str[i]=' ';
-  }
-}
-
-/*********************************************************************/
-
 /* Build DBT object from event structure.
    Html <tags> is converted to [tags], '\n' is converted to ' '
    in all fields but 'body'.
@@ -108,13 +89,13 @@ print_event(int id, event_t * ev){
 /*********************************************************************/
 
 int
-event_last_id(dbs_t *dbs){
+event_last_id(){
   int id, ret;
   DBC *curs;
   DBT key = mk_empty_dbt();
   DBT val = mk_empty_dbt();
 
-  ret = dbs->events->cursor(dbs->events, NULL, &curs, 0)==0? 0:-1;
+  ret = dbs.events->cursor(dbs.events, NULL, &curs, 0)==0? 0:-1;
 
   if (ret==0){
     ret = curs->get(curs, &key, &val, DB_PREV);
@@ -134,9 +115,9 @@ event_last_id(dbs_t *dbs){
 }
 
 int
-event_put(dbs_t *dbs, int id, event_t * event, int overwrite){
+event_put(unsigned int id, event_t * event, int overwrite){
   int ret;
-  DBT key = mk_int_dbt(&id);
+  DBT key = mk_uint_dbt(&id);
   DBT val = event2dbt(event);
 
   if (val.data==NULL) return 1;
@@ -146,7 +127,7 @@ event_put(dbs_t *dbs, int id, event_t * event, int overwrite){
     return 1;
   }
 
-  ret = dbs->events->put(dbs->events, NULL, &key, &val,
+  ret = dbs.events->put(dbs.events, NULL, &key, &val,
              overwrite? 0:DB_NOOVERWRITE);
   if (ret!=0)
     fprintf(stderr, "Error: can't write user information: %s\n",
@@ -157,23 +138,23 @@ event_put(dbs_t *dbs, int id, event_t * event, int overwrite){
 }
 
 int
-event_new(dbs_t *dbs, event_t * event){
+event_new(event_t * event){
   int id,ret;
 
   if ((id = event_last_id(dbs))<0) return -1;
   id++;
 
-  ret = event_put(dbs, id, event, 1);
+  ret = event_put(id, event, 1);
   if (ret == 0) printf("%d\n", id);
   return ret;
 }
 
 int
-event_del(dbs_t *dbs, int id){
+event_del(unsigned int id){
   int ret;
-  DBT key = mk_int_dbt(&id);
+  DBT key = mk_uint_dbt(&id);
 
-  ret = dbs->events->del(dbs->events, NULL, &key, 0);
+  ret = dbs.events->del(dbs.events, NULL, &key, 0);
   if (ret!=0)
     fprintf(stderr, "Error: can't delete event: %s\n",
       db_strerror(ret));
@@ -181,13 +162,13 @@ event_del(dbs_t *dbs, int id){
 }
 
 int
-event_print(dbs_t *dbs, int id){
+event_print(unsigned int id){
   int ret;
-  DBT key = mk_int_dbt(&id);
+  DBT key = mk_uint_dbt(&id);
   DBT val = mk_empty_dbt();
   event_t ev;
 
-  ret = dbs->events->get(dbs->events, NULL, &key, &val, 0);
+  ret = dbs.events->get(dbs.events, NULL, &key, &val, 0);
   if (ret!=0){
     fprintf(stderr, "Error: can't get event %d: %s\n",
       id, db_strerror(ret));
@@ -199,7 +180,7 @@ event_print(dbs_t *dbs, int id){
 }
 
 int
-event_search(dbs_t *dbs, event_t * mask){
+event_search(event_t * mask){
   int ret, i, j;
   unsigned int d1,d2;
   DBC *curs;
@@ -207,7 +188,7 @@ event_search(dbs_t *dbs, event_t * mask){
   DBT val = mk_empty_dbt();
   event_t ev;
 
-  ret = dbs->events->cursor(dbs->events, NULL, &curs, 0);
+  ret = dbs.events->cursor(dbs.events, NULL, &curs, 0);
   if (ret!=0){
     fprintf(stderr, "Error: can't get id from database: %s \n",
       db_strerror(ret));

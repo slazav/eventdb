@@ -55,6 +55,13 @@ const action_t actions[] = {
   {"event_search",&do_event_search,ACT_RO, LVL_NOAUTH, 7,
      "<title> <body> <people> <route> <date1> <date2> <tags>",
      "Find events"},
+  {"log_new",   &do_log_new,   ACT_RW, LVL_ROOT, 4,
+     "<event> <usr> <action> <msg>",
+     "Add new log, print its id"},
+  {"log_print", &do_log_print, ACT_RO, LVL_NOAUTH, 1,
+     "<id>", "Print log entry"},
+  {"log_tsearch", &do_log_tsearch, ACT_RO, LVL_NOAUTH, 2,
+     "<t1> <t2>", "Print all log entries between t1 and t2. Use \"\" for now"},
   {NULL, NULL, 0, 0, 0, NULL, NULL}};
 
 void
@@ -66,7 +73,6 @@ print_short_help(){
 #define MAXPWD 200
 main(int argc, char **argv){
   int i;
-  dbs_t dbs;
   char *user, *action;
   char pwd[MAXPWD];
 
@@ -116,13 +122,13 @@ main(int argc, char **argv){
 
     /* open database*/
     flags = actions[i].db_access==ACT_RW? DB_CREATE:DB_RDONLY;
-    if (databases_open(&dbs, flags)) exit(1);
+    if (databases_open(flags)) exit(1);
 
     /* Authentication and level checking */
-    ret = user_check(&dbs, user, pwd, actions[i].level);
+    ret = user_check(user, pwd, actions[i].level);
 
-    if (ret == 0) ret = (*actions[i].func)(&dbs, user, argv+4);
-    ret = ret || databases_close(&dbs);
+    if (ret == 0) ret = (*actions[i].func)(user, argv+4);
+    ret = ret || databases_close();
     exit(ret);
   }
 
