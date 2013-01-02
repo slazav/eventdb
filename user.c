@@ -4,6 +4,7 @@
 /****************************************************************/
 
 #define MAXNAME 30
+#define MINPASS 4
 
 int
 check_name(const char * name){
@@ -109,6 +110,10 @@ user_add(dbs_t *dbs, char * name, char *pwd, int level){
   user_t user;
   user.active = 1;
   user.level  = level;
+  if (strlen(pwd)<MINPASS){
+    fprintf(stderr, "Error: password in too short\n");
+    return 1;
+  }
   MD5(pwd, strlen(pwd), user.md5);
   return user_put(dbs, &user, name, 0);
 }
@@ -119,6 +124,10 @@ user_chpwd(dbs_t *dbs, char * name, char *pwd){
   user_t user;
   ret = user_get(dbs, &user, name);
   if (ret) return ret;
+  if (strlen(pwd)<MINPASS){
+    fprintf(stderr, "Error: password in too short\n");
+    return 1;
+  }
   MD5(pwd, strlen(pwd), user.md5);
   return user_put(dbs, &user, name, 1);
 }
