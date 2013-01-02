@@ -18,30 +18,14 @@ print qq*<html><body>
 print eventdb::form($user);
 print qq*</td></tr>*;
 
-### do some actions (and print errors if needed)
-my $usr=param('usr') || '';
-eventdb::query($user, $pass, 'user_on',  $usr) if defined param('UserOn');
-eventdb::query($user, $pass, 'user_off', $usr) if defined param('UserOff');
-eventdb::query($user, $pass, 'user_add',
-  param('new_name') || '', param('new_pass') || '' )
-    if defined param('UserAdd');
-
-my $lvl = param('new_level') || 0;
-eventdb::query($user, $pass, 'user_chlvl', $usr, $lvl) if defined param('ChLevel');
-
-if (defined param('UserChPwd')){
-  my $new_pwd=param('new_pwd') || '';
-  if ($user eq $usr){
-    eventdb::query($user, $pass, 'user_mypwd', $new_pwd)
-      and eventdb::chpwd($new_pwd) and $pass=$new_pwd;}
-  else{
-    eventdb::query($user, $pass, 'user_chpwd', $usr, $new_pwd);}
-  }
-}
 
 
-if ($usr){ ## show one user
-  my $out = eventdb::query($user, $pass, 'user_show',  $usr);
+# show events
+
+  my $out = eventdb::query($user, $pass, 'envent_search', "", "", "", "", "", "", "");
+
+
+
   my ($name, $act, $l) = split(/:/, $out);
   my $l1='';
   $l1 = 'admin' if ($l >= $eventdb::lvl_admin);

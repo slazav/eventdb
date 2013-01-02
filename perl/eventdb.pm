@@ -66,12 +66,39 @@ sub form{
   }
 }
 
-
 ## NOT WORKING!!!
 sub chpwd{
   my $pass=shift;
   $session->param('pass', $pass);
   $session->flush();
+}
+
+### print error in a table raw
+sub print_err{
+  my $err = shift;
+  $err=~s/</&lt;/g;
+  $err=~s/>/&gt;/g;
+  $err=~s/\n/<br>/g;
+  print qq*
+    <tr><td bgcolor="#FFDDDD"><h3 color=red>$err</h3></td></tr>*;
+}
+
+### query to eventdb (result is returned, error is printed)
+sub query{
+  my $user   = shift;
+  my $pass   = shift;
+  my $action = shift;
+  my $args = '';
+  foreach (@_){
+    s/'/'"'"'/g; #'# A single quote may not occur between single quotes,
+                   # even when preceded by a backslash -- man bash
+    $args .= " '$_'";
+  }
+  my $out = qx($eventdb::evdb_prog '$user' '$pass' '$action' $args 2>&1) || '';
+  my $ret = $? >> 8;
+
+  print_err($out) if $ret != 0;
+  return $ret==0? $out:'';
 }
 
 1;
