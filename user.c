@@ -22,7 +22,7 @@ check_name(const char * name){
     return 1;
   }
   if (strspn(name, accept)!=n){
-    fprintf(stderr, "Error: a-z,A-Z,0-9, and _ character only accepted\n");
+    fprintf(stderr, "Error: only a-z,A-Z,0-9, and _ characters are accepted\n");
     return 1;
   }
   return 0;
@@ -99,9 +99,10 @@ user_check(char * name, char *pwd, int level){
       user.active && user.level>=level &&
       memcmp(MD5(pwd, strlen(pwd),NULL),
                 user.md5, sizeof(user.md5))==0) return 0;
-
-//  sleep(1);
-  fprintf(stderr, "Error: wrong user/password\n");
+#ifdef MCCME
+  sleep(1);
+#endif
+  fprintf(stderr, "Error: permission denied\n");
   return 1;
 }
 
@@ -111,7 +112,7 @@ user_add(char * name, char *pwd, int level){
   user.active = 1;
   user.level  = level;
   if (strlen(pwd)<MINPASS){
-    fprintf(stderr, "Error: password in too short\n");
+    fprintf(stderr, "Error: password is too short\n");
     return 1;
   }
   MD5(pwd, strlen(pwd), user.md5);
