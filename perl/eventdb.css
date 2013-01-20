@@ -1,0 +1,32 @@
+TD {
+/*  font-family: sans-serif;
+  font-size:15px;
+  background-color: #FFEEFF;*/
+  padding: 10;
+}
+
+.login {
+  background-color: #EECCEE;
+  text-align: right;
+  border-left: 0;
+}
+
+.nav {
+  background-color: #EECCEE;
+  text-align: left;
+  font-weight: bold;
+  border-right: 0;
+}
+
+.error {
+  color: red;
+  text-align: left;
+}
+
+.main_tbl {
+  font-family: sans-serif;
+  font-size:15px;
+  background-color: #FFEEFF;
+  width: 100%;
+  padding: 0;
+}
