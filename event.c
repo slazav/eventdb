@@ -180,7 +180,7 @@ event_print(unsigned int id){
 }
 
 int
-event_search(event_t * mask){
+event_search(const char * txt, event_t * mask){
   int ret, i, j;
   unsigned int d1,d2;
   DBC *curs;
@@ -221,6 +221,13 @@ event_search(event_t * mask){
     if (strlen(mask->body)   && !strcasestr(ev.body,   mask->body))   continue;
     if (strlen(mask->people) && !strcasestr(ev.people, mask->people)) continue;
     if (strlen(mask->route)  && !strcasestr(ev.route,  mask->route))  continue;
+
+    /* search in text fields: */
+    if (strlen(txt) && (
+      !strcasestr(ev.title,  txt) &&
+      !strcasestr(ev.body,   txt) &&
+      !strcasestr(ev.people, txt) &&
+      !strcasestr(ev.route,  txt))) continue;
 
     print_event(* (int*)key.data, &ev);
   }

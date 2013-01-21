@@ -140,10 +140,11 @@ event_parse(char **argv, event_t * event, int tags[MAX_TAGS]){
       fprintf(stderr, "Too many tags (> %d)\n", MAX_TAGS-1);
       return 1;
     }
-    if (strlen(prev)) tags[i] = atoi(prev);
-    if (tags[i]==0){
-      fprintf(stderr, "Error: bad tag: %s\n", prev);
-      return 1;
+    if (strlen(prev)){ tags[i] = atoi(prev);
+      if (tags[i]==0){
+        fprintf(stderr, "Error: bad tag: %s\n", prev);
+        return 1;
+      }
     }
     i++;
   }
@@ -189,8 +190,8 @@ int
 do_event_search(char * user, char **argv){
   int tags[MAX_TAGS];
   event_t event;
-  return event_parse(argv, &event, tags) ||
-         event_search(&event);
+  return event_parse(argv+1, &event, tags) ||
+         event_search(argv[0], &event);
 }
 
 /*********************************************************************/

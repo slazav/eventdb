@@ -44,7 +44,7 @@ int event_print(unsigned int id);
    stdout in xml-like format.
    Use date1=-1
    Return 0 on success. Print error message on errors. */
-int event_search(event_t * mask);
+int event_search(const char * txt, event_t * mask);
 
 
 #endif
