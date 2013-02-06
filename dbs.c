@@ -26,7 +26,7 @@ const database_t databases[] = {
   {DBMASK_LOGS,   &(dbs.logs),   DEFAULT_HOMEDIR "/logs",   NODUP, compare_uint},
   {DBMASK_EVENTS, &(dbs.events), DEFAULT_HOMEDIR "/events", NODUP, compare_uint},
   {DBMASK_LINKS,  &(dbs.links),  DEFAULT_HOMEDIR "/links",  DUP, compare_uint},
-  {DBMASK_TRACKS, &(dbs.tracks), DEFAULT_HOMEDIR "/tracks", DUP, compare_uint},
+  {DBMASK_TRACKS, &(dbs.tracks), DEFAULT_HOMEDIR "/tracks", NODUP, NULL},
   {0,NULL,NULL,0,NULL}
 };
 

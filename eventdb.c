@@ -42,6 +42,7 @@ const action_t actions[] = {
      "-", "List all info about users"},
   {"user_show",   &do_user_show,   ACT_RO, LVL_NOAUTH, 1,
      "<user>", "Show information about user"},
+
   {"event_new",   &do_event_new,   ACT_RW, LVL_NORM, 7,
      "<title> <body> <people> <route> <date1> <date2> <tags>",
      "Add new event, print its id"},
@@ -55,6 +56,7 @@ const action_t actions[] = {
   {"event_search",&do_event_search,ACT_RO, LVL_NOAUTH, 8,
      "<text> <title> <body> <people> <route> <date1> <date2> <tags>",
      "Find events: use <text> for full text search or special event fields"},
+
   {"log_new",   &do_log_new,   ACT_RW, LVL_ROOT, 4,
      "<event> <usr> <action> <msg>",
      "Add new log, print its id"},
@@ -62,6 +64,21 @@ const action_t actions[] = {
      "<id>", "Print log entry"},
   {"log_tsearch", &do_log_tsearch, ACT_RO, LVL_NOAUTH, 2,
      "<t1> <t2>", "Print all log entries between t1 and t2. Use \"\" for now"},
+
+  {"geo_create",   &do_geo_create,   ACT_RW, LVL_NOAUTH, 7,
+     "<fname> <comm> <auth> <date1> <date2> <length> <tags>",
+     "Add new geodata file"},
+  {"geo_delete",   &do_geo_delete,   ACT_RW, LVL_NOAUTH, 1,
+     "<fname>",
+     "Delete geodata"},
+  {"geo_replace",   &do_geo_replace,   ACT_RW, LVL_NOAUTH, 1,
+     "<fname>",
+     "Delete geodata"},
+  {"geo_show", &do_geo_show, ACT_RO, LVL_NOAUTH, 1,
+     "<fname>", "Print geo data"},
+  {"geo_list", &do_geo_list, ACT_RO, LVL_NOAUTH, 0,
+     "<fname>", "Print all geo data"},
+
   {NULL, NULL, 0, 0, 0, NULL, NULL}};
 
 void

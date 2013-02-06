@@ -13,6 +13,26 @@ setlocale(LC_ALL, "ru_RU.KOI8-R");
 ### get session, print html headers
 my ($user, $pass, $level) = eventdb::login();
 
+my %tags = {
+1 => velo вело
+2 => pesh пешком
+3 => lyzh лыжи
+4 => vodn сплав
+5 => gorn горная техника
+6 => sor  соревнования
+
+101 => D группа Дмитриева
+102 => S группа Сафронова
+
+podm Подмосковье
+evr  Европейская часть России
+kavk Кавказ
+ural Урал
+sib  Сибирь
+zagr Заграница
+
+}
+
 ######################################################################
 my %actions = (
 login_form => sub($$$){
@@ -24,6 +44,8 @@ print_errors => sub($$$){
   my ($user, $pass, $level) = @_;
   print qq* <h3 class=error>$eventdb::err</h3>*;
 },
+
+#### user list actions
 user_list => sub($$$){
   my ($user, $pass, $level) = @_;
   my $out = eventdb::query($user, $pass, 'user_list');
@@ -54,11 +76,18 @@ user_add_form =>sub($$$){
     <input type="submit" value="добавить" name="UserAdd"/>
     </form>* if $level >= $eventdb::lvl_admin;
 },
+user_add_op => sub($$$){
+  my ($user, $pass, $level) = @_;
+  my $new_name = param('new_name') || '';
+  my $new_pass = param('new_pass') || '';
+  eventdb::query($user, $pass, 'user_add', $new_name, $new_pass)
+    if defined param('UserAdd');
+},
 
+#### user actions
 user_print_name => sub($$$){
   print param('user') || '';
 },
-
 user_form => sub($$$){
   my ($user, $pass, $level) = @_;
   my $usr=param('user') || '';
@@ -99,7 +128,6 @@ user_form => sub($$$){
   print qq*
       </form>*;
 },
-
 user_change_op => sub($$$){
   my ($user, $pass, $level) = @_;
 
@@ -124,13 +152,128 @@ user_change_op => sub($$$){
   }
 },
 
-user_add_op => sub($$$){
-  my ($user, $pass, $level) = @_;
-  my $new_name = param('new_name') || '';
-  my $new_pass = param('new_pass') || '';
-  eventdb::query($user, $pass, 'user_add', $new_name, $new_pass)
-    if defined param('UserAdd');
+#### search actions
+search_controls => sub($$$){
+  print qq*
+    <form method="get">
+    Искать текст: <input name="search_txt" type="text" maxlength="25" size="25"/>
+    тэг: <input name="search_tag" type="text" maxlength="5" size="5"/>
+    год: <input name="search_year" type="text" maxlength="5" size="5"/>
+    <input type="submit" value="Искать" name="Search"/>
+  *;
 },
+
+search_results => sub($$$){
+  my $search_txt=param('search_txt') || '';
+  my $search_tag=param('search_tag') || '';
+  my $search_year=param('search_year') || '';
+  my $out = eventdb::query($user, $pass, 'event_search',
+    $search_txt, '', '', '', '', "-1", "-1", $search_tag);
+  while ($out =~ s|<event id=(\d+) date1=(\d+) date2=(\d+)>(.*?)</event>||s){
+    my ($id, $d1, $d2, $u) = ($1, $2, $3, $4);
+    $d1=~s|(\d{4})(\d{2})(\d{2})|$1/$2/$3|; my ($dy1, $dm1, $dd1) = ($1,$2,$3);
+    $d2=~s|(\d{4})(\d{2})(\d{2})|$1/$2/$3|; my ($dy2, $dm2, $dd2) = ($1,$2,$3);
+    # packed date
+    my $date = $d1;
+    if    ($dy1 ne $dy2){ $date.="-$d2"; }
+    elsif ($dm1 ne $dm2){ $date.="-$dm2/$dd2"; }
+    elsif ($dd1 ne $dd2){ $date.="-$dd2"; }
+
+    $u=~m|<title>(.*?)</title>|;   my $title = $1 || '';
+    $u=~m|<people>(.*?)</people>|; my $people = "<b>Участники:</b> $1<br>\n" || '';
+    $u=~m|<route>(.*?)</route>|;   my $route =  "<b>Маршрут:</b> $1<br>\n" || '';
+    $u=~m|<body>(.*?)</body>|;     my $body = $1 || '';
+    $u=~m|<tags>(.*?)</tags>|;     my $tags = $1 || '';
+
+    print qq*
+    <div id="eventh_$id" onclick="toggle('$id');" style="padding: 5;">
+    <b style="cursor: pointer;"><i>$date:</i> $title</b>
+    <div id="event_$id" style="display:none; padding: 5;"><hr>
+    $people$route$body
+    $tags
+      <div align=right> <a href="eventdb.pl?event=$id">[ссылка]</a> </div>
+    </div>
+    </div>
+    *;
+  }
+},
+last_large_events => sub($$$){
+  print qq*
+    <h3>Большие походы</h3>*;
+},
+last_changes => sub($$$){
+  print qq*
+    <h3>Последние изменения</h3>*;
+},
+
+event_form => sub($$$){
+  my $event  = param('event') || '';
+  my ($title, $d1, $d2, $people, $route, $body, $tags)  = ('','','','','','','','');
+  if ($event){
+    my $out = eventdb::query($user, $pass, 'event_print', $event);
+    while ($out =~ s|<event id=(\d+) date1=(\d+) date2=(\d+)>(.*?)</event>||s){
+      ($d1, $d2) = ($2, $3);
+      my $u = $4;
+      $d1=~s|(\d{4})(\d{2})(\d{2})|$1-$2-$3|;
+      $d2=~s|(\d{4})(\d{2})(\d{2})|$1-$2-$3|;
+      $u=~m|<title>(.*?)</title>|;   $title  = $1 || '';
+      $u=~m|<people>(.*?)</people>|; $people = $1 || '';
+      $u=~m|<route>(.*?)</route>|;   $route  = $1 || '';
+      $u=~m|<body>(.*?)</body>|;     $body = $1 || '';
+      $u=~m|<tags>(.*?)</tags>|;     $tags = $1 || '';
+    }
+  }
+  print qq*
+  <form method="post" enctype="multipart/form-data">
+    <input name="event" type="hidden" value="$event">
+    <p>Заголовок:  <input name="title" type="text" maxlength="245" size="60" value="$title">
+    <p>Даты (yyyy-mm-dd):
+      <input name="date1" type="text" maxlength="12" size="12" value="$d1"> -
+      <input name="date2" type="text" maxlength="12" size="12" value="$d2"><br>
+    <p>Участники:<br>
+      <textarea name="people" rows=3 cols=85 wrap=soft>$people</textarea>
+    <p>Маршрут:<br>
+      <textarea name="route" rows=5 cols=85 wrap=soft>$route</textarea>
+    <p>Текст:<br>
+      <textarea name="body" rows=10 cols=85 wrap=soft>$body</textarea>
+    <p>
+    <p>Метки:<br>
+
+    <p><input type="submit" name="EventEdit" value="Сохранить запись">
+    <input type="submit" name="EventDel" value="Удалить запить">
+    </form>
+  </form>*;
+},
+
+event_change_op => sub($$$){
+  my ($user, $pass, $level) = @_;
+
+  my $event=param('event') || '';
+
+  if (defined param('EventEdit')){
+    my $title  = param('title')  || '';
+    my $body   = param('body')   || '';
+    my $people = param('people') || '';
+    my $route  = param('route')  || '';
+    my $date1  = param('date1')  || '';
+    my $date2  = param('date2')  || $date1;
+    my $tags   = param('tags')  || '';
+    $date1=~tr|.:/\\-||d;
+    $date2=~tr|.:/\\-||d;
+    if ($event){
+      eventdb::query($user, $pass, 'event_put',  $event,
+        $title, $body, $people, $route, $date1, $date2, $tags);}
+    else {
+      my $ev = eventdb::query($user, $pass, 'event_new',
+        $title, $body, $people, $route, $date1, $date2, $tags);
+      param('event', $ev);
+    }
+  }
+
+  eventdb::query($user, $pass, 'event_del',  $event)
+    if $event && defined param('EventDel');
+},
+
 
 );
 
@@ -162,5 +305,7 @@ if (defined param('user')){
   process_template("evdb_user.htm", $user, $pass, $level, \%actions); }
 elsif (defined param('user_list')){
   process_template("evdb_user_list.htm", $user, $pass, $level, \%actions); }
+elsif (defined param('event') && !defined param('EventDel')){
+  process_template("evdb_event.htm", $user, $pass, $level, \%actions); }
 else {
   process_template("evdb_main.htm", $user, $pass, $level, \%actions); }

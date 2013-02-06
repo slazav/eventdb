@@ -93,9 +93,10 @@ sub query{
   my $action = shift;
   my $args = '';
   foreach (@_){
-    s/'/'"'"'/g; #'# A single quote may not occur between single quotes,
+    my $l = $_;
+    $l =~ s/'/'"'"'/g; #'# A single quote may not occur between single quotes,
                    # even when preceded by a backslash -- man bash
-    $args .= " '$_'";
+    $args .= " '$l'";
   }
   my $out = qx($eventdb::evdb_prog '$user' '$pass' '$action' $args 2>&1) || '';
   my $ret = $? >> 8;

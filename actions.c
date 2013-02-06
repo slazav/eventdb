@@ -2,6 +2,7 @@
 #include "user.h"
 #include "event.h"
 #include "log.h"
+#include "geo.h"
 #include <string.h>
 #include <time.h>
 
@@ -220,3 +221,105 @@ do_log_tsearch(char * user, char **argv){
   if (strlen(argv[1])) t2=atoi(argv[1]);
   return log_tsearch(t1, t2);
 }
+
+/*********************************************************************/
+
+int get_int(const char *str, const char *name){
+  int ret;
+  if (strlen(str)==0) return 0;
+  ret=atoi(str);
+  if (ret==0){
+    fprintf(stderr, "Error: bad %s: %s\n", name, str);
+    return -1;
+  }
+  return ret;
+}
+
+/* get geodata information from argv[0..5] and put it to geo and tags */
+int
+geo_parse(char **argv, geo_t * geo, int tags[MAX_TAGS]){
+  char *stag, *prev;
+  int i;
+
+  geo->comm  = argv[0];
+  geo->auth  = argv[1];
+  geo->date1 = get_int(argv[2], "date1");   if (geo->date1<0)  return -1;
+  geo->date2 = get_int(argv[3], "date2");   if (geo->date2<0)  return -1;
+  geo->length = get_int(argv[4], "length"); if (geo->length<0) return -1;
+
+  stag = argv[5], i=0;
+  while (stag && (prev = strsep(&stag, ",:; \n\t"))){
+    if (i>MAX_TAGS-1){
+      fprintf(stderr, "Too many tags (> %d)\n", MAX_TAGS-1);
+      return 1;
+    }
+    if (strlen(prev)){ tags[i] = atoi(prev);
+      if (tags[i]==0){
+        fprintf(stderr, "Error: bad tag: %s\n", prev);
+        return 1;
+      }
+    }
+    i++;
+  }
+  geo->tags = tags;
+  geo->ntags = i;
+  return 0;
+}
+
+int
+do_geo_create(char * user, char **argv){
+  int tags[MAX_TAGS];
+  char * fname;
+  geo_t geo;
+  geo.ctime = time(NULL);
+  geo.cuser = user;
+  fname = argv[0];
+  return geo_parse(argv+1, &geo, tags) ||
+         geo_create(fname, &geo);
+}
+
+int
+do_geo_replace(char * user, char **argv){
+// check permissions!
+  return geo_replace(argv[0]);
+}
+
+int
+do_geo_delete(char * user, char **argv){
+// check permissions!
+  return geo_delete(argv[0]);
+}
+
+int
+do_geo_show(char * user, char **argv){
+  return geo_show(argv[0]);
+}
+
+int
+do_geo_list(char * user, char **argv){
+  return geo_list();
+}
+
+/*
+int
+do_geo_put(char * user, char **argv){
+  int tags[MAX_TAGS];
+  geo_t geo;
+  unsigned int id = atoi(argv[0]);
+  if (id==0){
+    fprintf(stderr, "Error: bad geo id: %s\n", argv[0]);
+    return 1;
+  }
+  return geo_parse(argv+1, &geo, tags) ||
+         geo_put(id, &geo, 1);
+}
+
+
+int
+do_geo_search(char * user, char **argv){
+  int tags[MAX_TAGS];
+  geo_t geo;
+  return geo_parse(argv+1, &geo, tags) ||
+         geo_search(argv[0], &geo);
+}
+*/

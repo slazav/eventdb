@@ -23,4 +23,7 @@ extern action_func do_event_new, do_event_put, do_event_del,
 
 extern action_func do_log_new, do_log_print, do_log_tsearch;
 
+extern action_func do_geo_create, do_geo_delete, do_geo_replace,
+                   do_geo_show, do_geo_list;
+
 #endif

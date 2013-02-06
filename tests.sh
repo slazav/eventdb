@@ -99,6 +99,6 @@ check 0 "del event 2" "sla" "1234" event_del "2"
 
 echo "======== Search ========"
 
-check 0 "search" "" "" event_search "" "tit" "" "" "" "20121206" "-1" "124"
+check 0 "search" "" "" event_search "" "" "" "" "" "-1" "-1" ""
 
 
