@@ -14,31 +14,36 @@
    this structure, and pointers contain offsets from the beginning of
    the structure. */
 typedef struct {
+  int ctime;
   int date1, date2;
-  int ntags;  /* number of int tags */
   char * title,
        * body,
        * people,
-       * route;
+       * route,
+       * owner;
+  int ntags;  /* number of int tags */
   int * tags;
 } event_t;
 
 /* Write event to the database.
    Return 0 on success. Print error message on errors. */
-int event_put(unsigned int id, event_t * event, int overwrite);
+int event_write(unsigned int id, event_t * event, int overwrite);
 
 /* Write new event to the database, print id to stdout.
    Return 0 on success. Print error message on errors. */
-int event_new(event_t * event);
+int event_create(event_t * event);
 
 /* Delete event from the database.
    Return 0 on success. Print error message on errors. */
-int event_del(unsigned int id);
+int event_delete(unsigned int id);
+
+/* Check owner */
+int event_check_owner(unsigned int id, char *user);
 
 /* Get event from the database and print it to stdout in
    xml-like format.
    Return 0 on success. Print error message on errors. */
-int event_print(unsigned int id);
+int event_show(unsigned int id);
 
 /* Search events corresponding to the mask and print them to
    stdout in xml-like format.

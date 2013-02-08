@@ -139,7 +139,7 @@ user_change_op => sub($$$){
     if defined param('UserOff');
 
   my $new_level = param('new_level') || '';
-  eventdb::query($user, $pass, 'user_chlvl', $usr, $new_level)
+  eventdb::query($user, $pass, 'user_level_set', $usr, $new_level)
     if defined param('ChLevel');
 
   if (defined param('UserChPwd')){
@@ -210,7 +210,7 @@ event_form => sub($$$){
   my $event  = param('event') || '';
   my ($title, $d1, $d2, $people, $route, $body, $tags)  = ('','','','','','','','');
   if ($event){
-    my $out = eventdb::query($user, $pass, 'event_print', $event);
+    my $out = eventdb::query($user, $pass, 'event_show', $event);
     while ($out =~ s|<event id=(\d+) date1=(\d+) date2=(\d+)>(.*?)</event>||s){
       ($d1, $d2) = ($2, $3);
       my $u = $4;
@@ -261,16 +261,16 @@ event_change_op => sub($$$){
     $date1=~tr|.:/\\-||d;
     $date2=~tr|.:/\\-||d;
     if ($event){
-      eventdb::query($user, $pass, 'event_put',  $event,
+      eventdb::query($user, $pass, 'event_edit',  $event,
         $title, $body, $people, $route, $date1, $date2, $tags);}
     else {
-      my $ev = eventdb::query($user, $pass, 'event_new',
+      my $ev = eventdb::query($user, $pass, 'event_create',
         $title, $body, $people, $route, $date1, $date2, $tags);
       param('event', $ev);
     }
   }
 
-  eventdb::query($user, $pass, 'event_del',  $event)
+  eventdb::query($user, $pass, 'event_delete',  $event)
     if $event && defined param('EventDel');
 },
 
@@ -307,5 +307,7 @@ elsif (defined param('user_list')){
   process_template("evdb_user_list.htm", $user, $pass, $level, \%actions); }
 elsif (defined param('event') && !defined param('EventDel')){
   process_template("evdb_event.htm", $user, $pass, $level, \%actions); }
+elsif (defined param('geo') && !defined param('GeoDel')){
+  process_template("evdb_geo.htm", $user, $pass, $level, \%actions); }
 else {
   process_template("evdb_main.htm", $user, $pass, $level, \%actions); }

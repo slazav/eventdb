@@ -25,12 +25,12 @@
    this structure, and pointers contain offsets from the beginning of
    the structure. */
 typedef struct {
-  int date1, date2;
   int ctime;
+  int date1, date2;
   int length;
   char * comm,
        * auth,
-       * cuser;
+       * owner;
   int ntags;  /* number of int tags */
   int * tags;
 } geo_t;
@@ -48,6 +48,9 @@ int geo_delete(char * fname);
 
 /* Edit (or add) metadata for existing file */
 int geo_edit(char * fname, geo_t * geo);
+
+/* Check owner */
+int geo_check_owner(char * fname, char *user);
 
 /* Show metadata for a filename */
 int geo_show(char * fname);

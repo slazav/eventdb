@@ -6,21 +6,76 @@
 #include <string.h>
 #include <time.h>
 
-char * superuser = "root";
+const char * superuser = "root";
 
 /* just a tmp buffer size: */
 #define MAX_TAGS 1024
 
 /*********************************************************************/
 
+int auth(const char * name, char * pwd){
+  int ret;
+  user_t user;
+
+  if (strlen(name)==0) return LVL_ANON;
+
+  if (strlen(pwd)==0) return LVL_NOAUTH;
+
+  if (user_get(&user, name)!=0) return -1;
+  if ( user.active &&
+      memcmp(MD5(pwd, strlen(pwd),NULL),
+                user.md5, sizeof(user.md5))==0) return user.level;
+#ifdef MCCME
+  sleep(1);
+#endif
+  fprintf(stderr, "Error: bad user/password\n");
+  return -1;
+}
+
+/*********************************************************************/
+/* helpers */
 int
-do_user_check(char * user, char **argv){
-  /* auth check is performed outside */
-  return user_show(user, USR_SHOW_LEVEL);
+level_check(int user_level, int needed_level){
+  if (user_level < needed_level){
+    fprintf(stderr, "Error: permission denied\n", 
+      user_level, needed_level);
+    return 1;
+  }
+  else return 0;
 }
 
 int
-do_root_add(char * user, char **argv){
+get_int(const char *str, const char *name){
+  int ret;
+  if (strlen(str)==0) return 0;
+  ret=atoi(str);
+  if (ret==0){
+    fprintf(stderr, "Error: bad %s: %s\n", name, str);
+    return -1;
+  }
+  return ret;
+}
+
+unsigned int
+get_uint(const char *str, const char *name){
+  int ret;
+  ret=atoi(str);
+  if (ret==0)
+    fprintf(stderr, "Error: bad %s: %s\n", name, str);
+  return ret;
+}
+
+/*********************************************************************/
+
+int
+do_level_show(char * user, int level, char **argv){
+  printf("%d\n", level);
+  return 0;
+}
+
+int
+do_root_add(char * user, int level, char **argv){
+  /* Anybody can add root if it does not exist */
   char *new_pwd=argv[0];
   if ( user_get(NULL, superuser)==0 ){ /* extra check, maybe not needed */
     fprintf(stderr, "Error: superuser exists\n");
@@ -30,14 +85,15 @@ do_root_add(char * user, char **argv){
 }
 
 int
-do_user_add(char * user, char **argv){
+do_user_add(char * user, int level, char **argv){
+  if (level_check(level, LVL_ADMIN)!=0) return 1;
   return user_add(argv[0], argv[1], LVL_NORM);
 }
 
 int
-do_user_del(char * user, char **argv){
+do_user_del(char * user, int level, char **argv){
   char *mod_usr = argv[0];
-
+  if (level_check(level, LVL_ROOT)!=0) return 1;
   if (strcmp(mod_usr, superuser)==0){
     fprintf(stderr, "Error: can't delete superuser\n");
     return 1;
@@ -46,46 +102,54 @@ do_user_del(char * user, char **argv){
 }
 
 int
-do_user_on(char * user, char **argv){
-  return user_chact(argv[0], 1);
+do_user_on(char * user, int level, char **argv){
+  if (level_check(level, LVL_ADMIN)!=0) return 1;
+  return user_activity_set(argv[0], 1);
 }
 
 int
-do_user_off(char * user, char **argv){
+do_user_off(char * user, int level, char **argv){
   char *mod_usr = argv[0];
-
+  if (level_check(level, LVL_ADMIN)!=0) return 1;
   if (strcmp(mod_usr, superuser)==0){
     fprintf(stderr, "Error: can't deactivate superuser\n");
     return 1;
   }
-  return user_chact(mod_usr, 0);
+  return user_activity_set(mod_usr, 0);
 }
 
 int
-do_user_chlvl(char * user, char **argv){
+do_user_level_set(char * user, int level, char **argv){
   char *mod_usr = argv[0];
-  int level = atoi(argv[1]);
+  int new_level = get_int(argv[1], "level");
+
+  if (new_level<0)  return -1;
+
+  if (level_check(level, LVL_ADMIN)!=0) return 1;
 
   if (strcmp(mod_usr, superuser)==0){
     fprintf(stderr, "Error: can't change superuser level\n");
     return 1;
   }
-  if (level >= LVL_ROOT){
+
+  if (new_level >= LVL_ROOT){
     fprintf(stderr, "Error: level is too high\n");
     return 1;
   }
-  if (level <  LVL_NORM){
+
+  if (new_level <  LVL_NORM){
     fprintf(stderr, "Error: wrong level\n");
     return 1;
   }
-  return user_chlvl(mod_usr, level);
+  return user_level_set(mod_usr, new_level);
 }
 
 int
-do_user_chpwd(char * user, char **argv){
+do_user_chpwd(char * user, int level, char **argv){
   char *mod_usr = argv[0];
   char *mod_pwd = argv[1];
 
+  if (level_check(level, LVL_ADMIN)!=0) return 1;
   if (strcmp(mod_usr, superuser)==0){
     fprintf(stderr, "Error: can't change superuser pawssword\n");
     return 1;
@@ -94,22 +158,24 @@ do_user_chpwd(char * user, char **argv){
 }
 
 int
-do_user_mypwd(char * user, char **argv){
+do_user_mypwd(char * user, int level, char **argv){
+  if (level_check(level, LVL_NORM)!=0) return 1;
   return user_chpwd(user, argv[0]);
 }
 
 int
-do_user_list(char * user, char **argv){
+do_user_list(char * user, int level, char **argv){
   return user_list(USR_SHOW_NORM);
 }
 
 int
-do_user_dump(char * user, char **argv){
+do_user_dump(char * user, int level, char **argv){
+  if (level_check(level, LVL_ROOT)!=0) return 1;
   return user_list(USR_SHOW_FULL);
 }
 
 int
-do_user_show(char * user, char **argv){
+do_user_show(char * user, int level, char **argv){
   return user_show(argv[0], USR_SHOW_NORM);
 }
 
@@ -125,16 +191,9 @@ event_parse(char **argv, event_t * event, int tags[MAX_TAGS]){
   event->body   = argv[1];
   event->people = argv[2];
   event->route  = argv[3];
-  event->date1 = atoi(argv[4]);
-  if (event->date1==0){
-    fprintf(stderr, "Error: bad date1: %s\n", argv[4]);
-    return 1;
-  }
-  event->date2 = atoi(argv[5]);
-  if (event->date2==0){
-    fprintf(stderr, "Error: bad date2: %s\n", argv[5]);
-    return 1;
-  }
+  event->date1 = get_int(argv[4], "date1"); if (event->date1<0)  return -1;
+  event->date2 = get_int(argv[5], "date2"); if (event->date2<0)  return -1;
+
   stag = argv[6], i=0;
   while (stag && (prev = strsep(&stag, ",:; \n\t"))){
     if (i>MAX_TAGS-1){
@@ -155,40 +214,46 @@ event_parse(char **argv, event_t * event, int tags[MAX_TAGS]){
 }
 
 int
-do_event_new(char * user, char **argv){
+do_event_create(char * user, int level, char **argv){
   int tags[MAX_TAGS];
   event_t event;
-  return event_parse(argv, &event, tags) ||
-         event_new(&event);
+  event.ctime = time(NULL);
+  event.owner = user;
+  return level_check(level, LVL_NOAUTH) ||
+         event_parse(argv, &event, tags) ||
+         event_create(&event);
 }
 
 int
-do_event_put(char * user, char **argv){
+do_event_edit(char * user, int level, char **argv){
   int tags[MAX_TAGS];
   event_t event;
-  unsigned int id = atoi(argv[0]);
-  if (id==0){
-    fprintf(stderr, "Error: bad event id: %s\n", argv[0]);
-    return 1;
-  }
-  return event_parse(argv+1, &event, tags) ||
-         event_put(id, &event, 1);
+  unsigned int id = get_uint(argv[0], "event id");
+  if (id == 0)  return -1;
+  return level_check(level, LVL_NOAUTH) ||
+         event_check_owner(id, user) ||
+         event_parse(argv+1, &event, tags) ||
+         event_write(id, &event, 1);
 }
 
 int
-do_event_del(char * user, char **argv){
-  unsigned int id = atoi(argv[0]);
-  return event_del(id);
+do_event_delete(char * user, int level, char **argv){
+  unsigned int id = get_uint(argv[0], "event id");
+  if (id == 0)  return -1;
+  return level_check(level, LVL_NOAUTH) ||
+         event_check_owner(id, user) ||
+         event_delete(id);
 }
 
 int
-do_event_print(char * user, char **argv){
-  unsigned int id = atoi(argv[0]);
-  return event_print(id);
+do_event_show(char * user, int level, char **argv){
+  unsigned int id = get_uint(argv[0], "event id");
+  if (id == 0)  return -1;
+  return event_show(id);
 }
 
 int
-do_event_search(char * user, char **argv){
+do_event_search(char * user, int level, char **argv){
   int tags[MAX_TAGS];
   event_t event;
   return event_parse(argv+1, &event, tags) ||
@@ -198,7 +263,7 @@ do_event_search(char * user, char **argv){
 /*********************************************************************/
 
 int
-do_log_new(char * user, char **argv){
+do_log_new(char * user, int level, char **argv){
   log_t log;
   log.event  = atoi(argv[0]);
   log.user   = argv[1];
@@ -208,13 +273,13 @@ do_log_new(char * user, char **argv){
 }
 
 int
-do_log_print(char * user, char **argv){
+do_log_print(char * user, int level, char **argv){
   unsigned int id = atoi(argv[0]);
   return log_print(id);
 }
 
 int
-do_log_tsearch(char * user, char **argv){
+do_log_tsearch(char * user, int level, char **argv){
   unsigned int t1,t2;
   t1=t2=time(NULL);
   if (strlen(argv[0])) t1=atoi(argv[0]);
@@ -224,16 +289,6 @@ do_log_tsearch(char * user, char **argv){
 
 /*********************************************************************/
 
-int get_int(const char *str, const char *name){
-  int ret;
-  if (strlen(str)==0) return 0;
-  ret=atoi(str);
-  if (ret==0){
-    fprintf(stderr, "Error: bad %s: %s\n", name, str);
-    return -1;
-  }
-  return ret;
-}
 
 /* get geodata information from argv[0..5] and put it to geo and tags */
 int
@@ -267,59 +322,52 @@ geo_parse(char **argv, geo_t * geo, int tags[MAX_TAGS]){
 }
 
 int
-do_geo_create(char * user, char **argv){
+do_geo_create(char * user, int level, char **argv){
   int tags[MAX_TAGS];
-  char * fname;
+  char * fname = argv[0];
   geo_t geo;
   geo.ctime = time(NULL);
-  geo.cuser = user;
-  fname = argv[0];
-  return geo_parse(argv+1, &geo, tags) ||
+  geo.owner = user;
+  return level_check(level, LVL_NOAUTH) ||
+         geo_parse(argv+1, &geo, tags) ||
          geo_create(fname, &geo);
 }
 
 int
-do_geo_replace(char * user, char **argv){
-// check permissions!
-  return geo_replace(argv[0]);
+do_geo_edit(char * user, int level, char **argv){
+  int tags[MAX_TAGS];
+  char * fname = argv[0];
+  geo_t geo;
+  return level_check(level, LVL_NOAUTH) ||
+         geo_check_owner(fname, user) ||
+         geo_parse(argv+1, &geo, tags) ||
+         geo_edit(fname, &geo);
 }
 
 int
-do_geo_delete(char * user, char **argv){
-// check permissions!
-  return geo_delete(argv[0]);
+do_geo_replace(char * user, int level, char **argv){
+  char *fname = argv[0];
+  return level_check(level, LVL_NOAUTH) ||
+         geo_check_owner(fname, user) ||
+         geo_replace(fname);
 }
 
 int
-do_geo_show(char * user, char **argv){
-  return geo_show(argv[0]);
+do_geo_delete(char * user, int level, char **argv){
+  char *fname = argv[0];
+  return level_check(level, LVL_NOAUTH) ||
+         geo_check_owner(fname, user) ||
+         geo_delete(fname);
 }
 
 int
-do_geo_list(char * user, char **argv){
+do_geo_show(char * user, int level, char **argv){
+  char *fname = argv[0];
+  return geo_show(fname);
+}
+
+int
+do_geo_list(char * user, int level, char **argv){
   return geo_list();
 }
 
-/*
-int
-do_geo_put(char * user, char **argv){
-  int tags[MAX_TAGS];
-  geo_t geo;
-  unsigned int id = atoi(argv[0]);
-  if (id==0){
-    fprintf(stderr, "Error: bad geo id: %s\n", argv[0]);
-    return 1;
-  }
-  return geo_parse(argv+1, &geo, tags) ||
-         geo_put(id, &geo, 1);
-}
-
-
-int
-do_geo_search(char * user, char **argv){
-  int tags[MAX_TAGS];
-  geo_t geo;
-  return geo_parse(argv+1, &geo, tags) ||
-         geo_search(argv[0], &geo);
-}
-*/

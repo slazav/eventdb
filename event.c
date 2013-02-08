@@ -22,6 +22,7 @@ event2dbt(event_t * event){
            + strlen(event->body) + 1
            + strlen(event->people) + 1
            + strlen(event->route) + 1
+           + strlen(event->owner) + 1
            + sizeof(int) * event->ntags;
   val.data = malloc(val.size);
   if (val.data==NULL){
@@ -49,6 +50,10 @@ event2dbt(event_t * event){
     remove_html(val.data + ptr,  REMOVE_NL);
     ev->route = NULL + ptr;
     ptr += strlen(event->route) + 1;
+  strcpy(val.data + ptr, event->owner);
+    remove_html(val.data + ptr,  REMOVE_NL);
+    ev->owner = NULL + ptr;
+    ptr += strlen(event->owner) + 1;
 
   ev->tags = (int *)(NULL + ptr);
   for (i=0; i<event->ntags; i++){
@@ -67,6 +72,7 @@ dbt2event(DBT * dbt){
   ev.body   = (char *)dbt->data + ((void*)ev.body - NULL);
   ev.people = (char *)dbt->data + ((void*)ev.people - NULL);
   ev.route  = (char *)dbt->data + ((void*)ev.route - NULL);
+  ev.owner  = (char *)dbt->data + ((void*)ev.owner - NULL);
   ev.tags   = (int *)(dbt->data + ((void*)ev.tags - NULL)); /* careful with types!*/
   return ev;
 }
@@ -75,18 +81,21 @@ dbt2event(DBT * dbt){
 void
 print_event(int id, event_t * ev){
   int i;
-  printf("<event id=%d date1=%d date2=%d>\n", id, ev->date1, ev->date2);
+  printf("<event id=%d>\n", id, ev->date1, ev->date2);
+  printf(" <ctime>%d</ctime>\n",   ev->ctime);
+  printf(" <date1>%d</date1>\n",   ev->date1);
+  printf(" <date2>%d</date2>\n",   ev->date2);
   printf(" <title>%s</title>\n",  ev->title);
   printf(" <body>%s</body>\n",    ev->body);
   printf(" <people>%s</people>\n",ev->people);
   printf(" <route>%s</route>\n",  ev->route);
+  printf(" <owner>%s</owner>\n",  ev->owner);
+  printf(" <>%s</owner>\n",  ev->owner);
   printf(" <tags>");
   for (i=0; i<ev->ntags; i++) printf("%s%d", i==0?"":",", ev->tags[i]);
   printf("</tags>\n");
   printf("</event>\n");
 }
-
-/*********************************************************************/
 
 int
 event_last_id(){
@@ -114,8 +123,10 @@ event_last_id(){
   return id;
 }
 
+/*********************************************************************/
+
 int
-event_put(unsigned int id, event_t * event, int overwrite){
+event_write(unsigned int id, event_t * event, int overwrite){
   int ret;
   DBT key = mk_uint_dbt(&id);
   DBT val = event2dbt(event);
@@ -138,19 +149,19 @@ event_put(unsigned int id, event_t * event, int overwrite){
 }
 
 int
-event_new(event_t * event){
+event_create(event_t * event){
   int id,ret;
 
   if ((id = event_last_id(dbs))<0) return -1;
   id++;
 
-  ret = event_put(id, event, 1);
+  ret = event_write(id, event, 1);
   if (ret == 0) printf("%d\n", id);
   return ret;
 }
 
 int
-event_del(unsigned int id){
+event_delete(unsigned int id){
   int ret;
   DBT key = mk_uint_dbt(&id);
 
@@ -162,7 +173,33 @@ event_del(unsigned int id){
 }
 
 int
-event_print(unsigned int id){
+event_check_owner(unsigned int id, char *user){
+  int ret;
+  DBT key = mk_uint_dbt(id);
+  DBT val = mk_empty_dbt();
+  event_t obj;
+  ret = dbs.events->get(dbs.events, NULL, &key, &val, 0);
+
+  if (ret==DB_NOTFOUND){
+    fprintf(stderr, "Error: event not found: %d \n", id);
+    return ret;
+  }
+  if (ret!=0){
+    fprintf(stderr, "Error: can't get %d event information: %s\n",
+      id, db_strerror(ret));
+    return ret;
+  }
+  obj = dbt2event(&val);
+  if (strcmp(user, obj.owner)!=0){
+    fprintf(stderr, "Error: %s is not allowed to modify data owned by %s\n",
+      user, obj.owner);
+    return -1;
+  }
+  return 0;
+}
+
+int
+event_show(unsigned int id){
   int ret;
   DBT key = mk_uint_dbt(&id);
   DBT val = mk_empty_dbt();

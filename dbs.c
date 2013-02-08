@@ -121,7 +121,7 @@ DBT mk_uint_dbt(unsigned int * i){
   return ret;
 }
 
-DBT mk_string_dbt(char * str){
+DBT mk_string_dbt(const char * str){
   DBT ret;
   memset(&ret, 0, sizeof(DBT));
   ret.data = str;

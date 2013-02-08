@@ -31,14 +31,10 @@ check_name(const char * name){
 /****************************************************************/
 
 int
-user_get(user_t * user, char * name){
+user_get(user_t * user, const char * name){
   int ret;
   DBT key = mk_string_dbt(name);
   DBT val = mk_empty_dbt();
-  if (strlen(name)<1){
-    fprintf(stderr, "Error: empty user name\n");
-    return 1;
-  }
 
   ret = dbs.users->get(dbs.users, NULL, &key, &val, 0);
 
@@ -55,7 +51,7 @@ user_get(user_t * user, char * name){
 }
 
 int
-user_put(user_t * user, char * name, int overwrite){
+user_put(user_t * user, const char * name, int overwrite){
   int ret;
   DBT key = mk_string_dbt(name);
   DBT val;
@@ -74,40 +70,11 @@ user_put(user_t * user, char * name, int overwrite){
   return ret;
 }
 
-int
-user_del(char * name){
-  int ret;
-  DBT key = mk_string_dbt(name);
-  ret = dbs.users->del(dbs.users, NULL, &key, 0);
-  if (ret!=0)
-    fprintf(stderr, "Error: can't delete user: %s\n",
-      db_strerror(ret));
-  return ret;
-}
 
 /****************************************************************/
 
 int
-user_check(char * name, char *pwd, int level){
-  int ret;
-  user_t user;
-  if (level<=0) return 0;
-
-  if (strlen(name)!=0 &&
-      user_get(NULL, name)==0 && // w/o error message
-      user_get(&user, name)==0 &&
-      user.active && user.level>=level &&
-      memcmp(MD5(pwd, strlen(pwd),NULL),
-                user.md5, sizeof(user.md5))==0) return 0;
-#ifdef MCCME
-  sleep(1);
-#endif
-  fprintf(stderr, "Error: permission denied\n");
-  return 1;
-}
-
-int
-user_add(char * name, char *pwd, int level){
+user_add(const char * name, char *pwd, int level){
   user_t user;
   user.active = 1;
   user.level  = level;
@@ -120,7 +87,18 @@ user_add(char * name, char *pwd, int level){
 }
 
 int
-user_chpwd(char * name, char *pwd){
+user_del(const char * name){
+  int ret;
+  DBT key = mk_string_dbt(name);
+  ret = dbs.users->del(dbs.users, NULL, &key, 0);
+  if (ret!=0)
+    fprintf(stderr, "Error: can't delete user: %s\n",
+      db_strerror(ret));
+  return ret;
+}
+
+int
+user_chpwd(const char * name, char *pwd){
   int ret;
   user_t user;
   ret = user_get(&user, name);
@@ -134,7 +112,7 @@ user_chpwd(char * name, char *pwd){
 }
 
 int
-user_chact(char * name, int act){
+user_activity_set(const char * name, int act){
   int ret;
   user_t user;
   ret = user_get(&user, name);
@@ -144,7 +122,7 @@ user_chact(char * name, int act){
 }
 
 int
-user_chlvl(char * name, int level){
+user_level_set(const char * name, int level){
   int ret;
   user_t user;
   ret = user_get(&user, name);
@@ -154,17 +132,11 @@ user_chlvl(char * name, int level){
 }
 
 void
-my_show_user(char * name, user_t *user, int mode){
+my_show_user(const char * name, user_t *user, int mode){
   int i;
   switch (mode){
     case USR_SHOW_NORM: /* name:activity:level */
       printf("%s:%d:%d", name, user->active, user->level);
-      break;
-    case USR_SHOW_NAME:  /* list only active users */
-      if (user->active) printf("%s", name);
-      break;
-    case USR_SHOW_LEVEL:  /* user level */
-      printf("%d", user->active? user->level:-1);
       break;
     case USR_SHOW_FULL: /* all information: name:activity:level:md5 */
       printf("%s:%d:%d:", name, user->active, user->level);
@@ -197,7 +169,7 @@ user_list(int mode){
 }
 
 int
-user_show(char *name, int mode){
+user_show(const char *name, int mode){
   int ret;
   user_t user;
   if ((ret=user_get(&user, name))!=0) return ret;

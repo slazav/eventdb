@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <openssl/md5.h>
 
-
 #define ACT_RO 0
 #define ACT_RW 1
 
@@ -12,74 +11,76 @@ typedef struct {
   const char * cmd_name; /* command line name */
   action_func * func; /* action function (see actions.c) */
   int db_access;      /* ACT_RO/ACT_RW */
-  int level;          /* LVL_NOAUTH, LVL_NORM, LVL_ADMIN, LVL_ROOT */
   int add_args;       /* number of additional arguments */
   const char * arg_names, *description;
 } action_t;
 
 const action_t actions[] = {
-  {"user_check",  &do_user_check,  ACT_RO, LVL_NORM, 0,
-     "-", "Check that caller is active and password is ok"},
-  {"root_add",    &do_root_add,    ACT_RW, LVL_NOAUTH, 1,
+  {"level_show",  &do_level_show,   ACT_RO, 0,
+     "-", "Check password/activity and print level"},
+  {"root_add",    &do_root_add,    ACT_RW, 1,
      "<pwd>", "Add superuser if it does not exists"},
-  {"user_add",    &do_user_add,    ACT_RW, LVL_ADMIN, 2,
+  {"user_add",    &do_user_add,    ACT_RW, 2,
      "<user> <pwd>", "Add user"},
-  {"user_del",    &do_user_del,    ACT_RW, LVL_ROOT, 1,
+  {"user_del",    &do_user_del,    ACT_RW, 1,
      "<user>", "Delete user"},
-  {"user_on",     &do_user_on,     ACT_RW, LVL_ADMIN, 1,
+  {"user_on",     &do_user_on,     ACT_RW, 1,
      "<user>", "Activate user"},
-  {"user_off",    &do_user_off,    ACT_RW, LVL_ADMIN, 1,
+  {"user_off",    &do_user_off,    ACT_RW, 1,
      "<user>", "Deactivate non-root user"},
-  {"user_chlvl",  &do_user_chlvl,  ACT_RW, LVL_ADMIN, 2,
+  {"user_level_set",  &do_user_level_set,  ACT_RW, 2,
      "<user> <pwd>","Change non-root level"},
-  {"user_chpwd",  &do_user_chpwd,  ACT_RW, LVL_ADMIN, 2,
+  {"user_chpwd",  &do_user_chpwd,  ACT_RW, 2,
      "<user> <pwd>","Change non-root password"},
-  {"user_mypwd",  &do_user_mypwd,  ACT_RW, LVL_NORM, 1,
+  {"user_mypwd",  &do_user_mypwd,  ACT_RW, 1,
      "<pwd>","Change caller's password"},
-  {"user_list",   &do_user_list,   ACT_RO, LVL_NOAUTH, 0,
+  {"user_list",   &do_user_list,   ACT_RO, 0,
      "-", "List all users with active status and levels"},
-  {"user_dump",   &do_user_dump,   ACT_RO, LVL_ROOT, 0,
+  {"user_dump",   &do_user_dump,   ACT_RO, 0,
      "-", "List all info about users"},
-  {"user_show",   &do_user_show,   ACT_RO, LVL_NOAUTH, 1,
+  {"user_show",   &do_user_show,   ACT_RO, 1,
      "<user>", "Show information about user"},
 
-  {"event_new",   &do_event_new,   ACT_RW, LVL_NORM, 7,
+  {"event_create",   &do_event_create,   ACT_RW, 7,
      "<title> <body> <people> <route> <date1> <date2> <tags>",
      "Add new event, print its id"},
-  {"event_put",   &do_event_put,   ACT_RW, LVL_NORM, 8,
+  {"event_edit",   &do_event_edit,   ACT_RW, 8,
      "<id> <title> <body> <people> <route> <date1> <date2> <tags>",
      "Add new event, print its id"},
-  {"event_del",   &do_event_del,   ACT_RW, LVL_NORM, 1,
+  {"event_delete",   &do_event_delete,   ACT_RW, 1,
      "<id>", "Delete event"},
-  {"event_print", &do_event_print, ACT_RO, LVL_NOAUTH, 1,
+  {"event_show", &do_event_show, ACT_RO, 1,
      "<id>", "Print event data"},
-  {"event_search",&do_event_search,ACT_RO, LVL_NOAUTH, 8,
+  {"event_search",&do_event_search,ACT_RO, 8,
      "<text> <title> <body> <people> <route> <date1> <date2> <tags>",
      "Find events: use <text> for full text search or special event fields"},
 
-  {"log_new",   &do_log_new,   ACT_RW, LVL_ROOT, 4,
+  {"log_new",   &do_log_new,   ACT_RW, 4,
      "<event> <usr> <action> <msg>",
      "Add new log, print its id"},
-  {"log_print", &do_log_print, ACT_RO, LVL_NOAUTH, 1,
+  {"log_print", &do_log_print, ACT_RO, 1,
      "<id>", "Print log entry"},
-  {"log_tsearch", &do_log_tsearch, ACT_RO, LVL_NOAUTH, 2,
+  {"log_tsearch", &do_log_tsearch, ACT_RO, 2,
      "<t1> <t2>", "Print all log entries between t1 and t2. Use \"\" for now"},
 
-  {"geo_create",   &do_geo_create,   ACT_RW, LVL_NOAUTH, 7,
+  {"geo_create",   &do_geo_create,   ACT_RW, 7,
      "<fname> <comm> <auth> <date1> <date2> <length> <tags>",
      "Add new geodata file"},
-  {"geo_delete",   &do_geo_delete,   ACT_RW, LVL_NOAUTH, 1,
+  {"geo_edit",     &do_geo_edit,     ACT_RW, 7,
+     "<fname> <comm> <auth> <date1> <date2> <length> <tags>",
+     "Edit geodata information"},
+  {"geo_delete",   &do_geo_delete,   ACT_RW, 1,
      "<fname>",
      "Delete geodata"},
-  {"geo_replace",   &do_geo_replace,   ACT_RW, LVL_NOAUTH, 1,
+  {"geo_replace",   &do_geo_replace,   ACT_RW, 1,
      "<fname>",
      "Delete geodata"},
-  {"geo_show", &do_geo_show, ACT_RO, LVL_NOAUTH, 1,
+  {"geo_show", &do_geo_show, ACT_RO, 1,
      "<fname>", "Print geo data"},
-  {"geo_list", &do_geo_list, ACT_RO, LVL_NOAUTH, 0,
+  {"geo_list", &do_geo_list, ACT_RO, 0,
      "<fname>", "Print all geo data"},
 
-  {NULL, NULL, 0, 0, 0, NULL, NULL}};
+  {NULL, NULL, 0, 0, NULL, NULL}};
 
 void
 print_short_help(){
@@ -100,13 +101,6 @@ main(int argc, char **argv){
     for (i=0; actions[i].func != NULL; i++){
       fprintf(stderr, "%14s -- %s ",
         actions[i].cmd_name, actions[i].description);
-      switch (actions[i].level){
-        case LVL_NOAUTH: fprintf(stderr, "(everybody)"); break;
-        case LVL_NORM:   fprintf(stderr, "(any user)"); break;
-        case LVL_ADMIN:  fprintf(stderr, "(admin)"); break;
-        case LVL_ROOT:   fprintf(stderr, "(root)"); break;
-        default:   fprintf(stderr, "(\?\?\?)");
-      }
       fprintf(stderr, "\n");
       fprintf(stderr, "%14s    %d args: %s\n", "",
         actions[i].add_args, actions[i].arg_names);
@@ -127,7 +121,7 @@ main(int argc, char **argv){
 
   /* find corect action */
   for (i=0; actions[i].func != NULL; i++){
-    int ret, flags;
+    int ret, flags, level;
     if (strcmp(actions[i].cmd_name, action)!=0) continue;
 
     /* check number of additional arguments */
@@ -137,15 +131,19 @@ main(int argc, char **argv){
       exit(1);
     }
 
-    /* open database*/
+    /* open database */
     flags = actions[i].db_access==ACT_RW? DB_CREATE:DB_RDONLY;
-    if (databases_open(flags)) exit(1);
+    if (databases_open(flags)!=0) exit(1);
 
-    /* Authentication and level checking */
-    ret = user_check(user, pwd, actions[i].level);
+    /* Find user level */
+    level=auth(user, pwd);
+    if (level<0) exit(1);
 
-    if (ret == 0) ret = (*actions[i].func)(user, argv+4);
-    ret = ret || databases_close();
+    /* do action */
+    ret = (*actions[i].func)(user, level, argv+4);
+
+    /* close databases */
+    ret = databases_close() || ret;
     exit(ret);
   }
 

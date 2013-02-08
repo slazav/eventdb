@@ -36,7 +36,7 @@ int databases_close();
 /* create DBT for some simple data types*/
 DBT mk_empty_dbt();
 DBT mk_uint_dbt(unsigned int * i);
-DBT mk_string_dbt(char * str);
+DBT mk_string_dbt(const char * str);
 
 /* comparison funtion for unsigned int keys */
 int compare_uint(DB *dbp, const DBT *a, const DBT *b);

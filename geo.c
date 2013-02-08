@@ -20,7 +20,7 @@ geo2dbt(geo_t * obj){
   val.size = sizeof(geo_t)   /* static fields + pointers */
            + strlen(obj->comm) + 1 /* including \0*/
            + strlen(obj->auth) + 1
-           + strlen(obj->cuser) + 1
+           + strlen(obj->owner) + 1
            + sizeof(int) * obj->ntags;
   val.data = malloc(val.size);
   if (val.data==NULL){
@@ -40,10 +40,10 @@ geo2dbt(geo_t * obj){
     remove_html(val.data + ptr,  KEEP_NL);
     obj1->auth = NULL + ptr;
     ptr += strlen(obj->auth) + 1;
-  strcpy(val.data + ptr, obj->cuser);
+  strcpy(val.data + ptr, obj->owner);
     remove_html(val.data + ptr,  REMOVE_NL);
-    obj1->cuser = NULL + ptr;
-    ptr += strlen(obj->cuser) + 1;
+    obj1->owner = NULL + ptr;
+    ptr += strlen(obj->owner) + 1;
 
   obj1->tags = (int *)(NULL + ptr);
   for (i=0; i<obj->ntags; i++){
@@ -60,7 +60,7 @@ dbt2geo(DBT * dbt){
   /* Overwrite pointers to absolute values */
   obj.comm  = (char *)dbt->data + ((void*)obj.comm - NULL); /* (char*) + (int)(void*-void*) */
   obj.auth  = (char *)dbt->data + ((void*)obj.auth - NULL);
-  obj.cuser = (char *)dbt->data + ((void*)obj.cuser - NULL);
+  obj.owner = (char *)dbt->data + ((void*)obj.owner - NULL);
   obj.tags   = (int *)(dbt->data + ((void*)obj.tags - NULL)); /* careful with types! */
   return obj;
 }
@@ -70,13 +70,13 @@ void
 print_geo(char * fname, geo_t * obj){
   int i;
   printf("<geo file=\"%s\">\n", fname);
+  printf(" <ctime>%d</ctime>\n",   obj->ctime);
   printf(" <date1>%d</date1>\n",   obj->date1);
   printf(" <date2>%d</date2>\n",   obj->date2);
   printf(" <length>%d</length>\n", obj->length);
-  printf(" <ctime>%d</ctime>\n",   obj->ctime);
-  printf(" <cuser>%s</cuser>\n",   obj->cuser);
   printf(" <comm>%s</comm>\n",     obj->comm);
   printf(" <auth>%s</auth>\n",     obj->auth);
+  printf(" <owner>%s</owner>\n",   obj->owner);
   printf(" <tags>");
   for (i=0; i<obj->ntags; i++) printf("%s%d", i==0?"":",", obj->tags[i]);
   printf("</tags>\n");
@@ -178,7 +178,10 @@ geo_create(char * fname, geo_t * geo){
   /* write metadata */
   key = mk_string_dbt(fname);
   val = geo2dbt(geo); /* do free before return! */
+  if (val.data==NULL) return 1;
+
   ret = dbs.tracks->put(dbs.tracks, NULL, &key, &val, DB_NOOVERWRITE);
+
   if (ret!=0)
     fprintf(stderr, "Error: can't write geodata information: %s\n",
       db_strerror(ret));
@@ -217,6 +220,52 @@ geo_delete(char * fname){
 
 int
 geo_edit(char * fname, geo_t * geo){
+  int ret;
+  DBT key = mk_string_dbt(fname);
+  DBT val = geo2dbt(geo); /* do free before return! */
+
+  /* check that file exists */
+  ret = dbs.tracks->get(dbs.tracks, NULL, &key, &val, 0);
+  if (ret!=0){
+    fprintf(stderr, "Error: can't get geodata information: %s\n",
+      db_strerror(ret));
+    return ret;
+  }
+
+  /* write metadata */
+  ret = dbs.tracks->put(dbs.tracks, NULL, &key, &val, 0);
+  if (ret!=0)
+    fprintf(stderr, "Error: can't write geodata information: %s\n",
+      db_strerror(ret));
+
+  free(val.data);
+  return ret;
+}
+
+int
+geo_check_owner(char * fname, char *user){
+  int ret;
+  DBT key = mk_string_dbt(fname);
+  DBT val = mk_empty_dbt();
+  geo_t obj;
+  ret = dbs.tracks->get(dbs.tracks, NULL, &key, &val, 0);
+
+  if (ret==DB_NOTFOUND){
+    fprintf(stderr, "Error: file not found: %s \n", fname);
+    return ret;
+  }
+  if (ret!=0){
+    fprintf(stderr, "Error: can't get file information %s: %s\n",
+      fname, db_strerror(ret));
+    return ret;
+  }
+  obj = dbt2geo(&val);
+  if (strcmp(user, obj.owner)!=0){
+    fprintf(stderr, "Error: %s is not allowed to modify data owned by %s\n",
+      user, obj.owner);
+    return -1;
+  }
+  return 0;
 }
 
 int
@@ -226,6 +275,10 @@ geo_show(char * fname){
   DBT val = mk_empty_dbt();
   geo_t obj;
   ret = dbs.tracks->get(dbs.tracks, NULL, &key, &val, 0);
+  if (ret==DB_NOTFOUND){
+    fprintf(stderr, "Error: file not found: %s \n", fname);
+    return ret;
+  }
   if (ret!=0){
     fprintf(stderr, "Error: can't get file information %s: %s\n",
       fname, db_strerror(ret));
