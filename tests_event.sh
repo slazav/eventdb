@@ -14,14 +14,16 @@ check 1 "new event - bad date2" "sla" "1234" event_create "title\ntitle" "<body1
 check 1 "new event - bad tags" "sla" "1234" event_create "title\ntitle" "<body1>\nbody2"\
    "people" "route" "20121201" "20121203" "a,b"
 
-check 0 "new event by sla" "sla" "1234" event_create "title\ntitle1" "<body1>
-body2" "people" "route" "20121201" "20121203" "1231,124,125,126"
-check 0 "new event by sla" "sla" "1234" event_create "title\ntitle2" "<body1>
-body2" "people" "route" "20121205" "20121207" "1231,124,125,126"
+check 0 "new event by sla" "sla" "1234" event_create\
+  "title\ntitle1" "<body1> body2" "people" "route" "20121201" "20121203" "1231,124,125,126"
+check 0 "new event by sla" "sla" "1234" event_create\
+  "title\ntitle2" "<body1> body2" "people" "route" "20121205" "20121207" "1231,124,125,126"
 check 0 "print event" "" "" event_show "1"
 
-check 0 "edit event by sla" "sla" "1234" event_edit 1 "title\ntitle1e" "<body1_n>
-body2" "people" "route" "20121201" "20121205" "1231,222"
+check 1 "edit: no event" "sla" "1234" event_edit 3\
+  "title\ntitle1e" "<body1_n> body2" "people" "route" "20121201" "20121205" "1231,222"
+check 0 "edit event by sla" "sla" "1234" event_edit 1\
+  "title\ntitle1e" "<body1_n> body2" "people" "route" "20121201" "20121205" "1231,222"
 check 0 "print event" "" "" event_show "1"
 
 check 1 "del event 3" "sla" "1234" event_delete "3"

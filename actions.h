@@ -36,4 +36,23 @@ extern action_func do_level_show, do_root_add, do_user_add, do_user_del,
                    do_user_on, do_user_off, do_user_chpwd, do_user_level_set,
                    do_user_mypwd, do_user_list, do_user_dump, do_user_show;
 
+extern action_func do_event_create, do_event_edit, do_event_delete,
+                   do_event_show, do_event_search;
+
+#ifdef MCCME
+#define GEO_FDIR "/home/slazav/CH/gps"
+#else
+#define GEO_FDIR "./gps"
+#endif
+
+/* limits: geodata filename size, geodata file size */
+#define GEO_MAX_FNAME 32
+#define GEO_MAX_FSIZE 100000
+
+extern action_func do_geo_create, do_geo_edit, do_geo_delete,
+                   do_geo_replace, do_geo_show, do_geo_list;
+
+extern action_func do_log_new, do_log_print, do_log_tsearch;
+
+
 #endif

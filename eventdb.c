@@ -1,9 +1,6 @@
 #include "actions.h"
 #include "dbs.h"
 
-#include "log.h"
-#include "geo.h"
-
 #include <string.h>
 #include <stdlib.h>
 #include <openssl/md5.h>

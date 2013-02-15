@@ -1,4 +1,4 @@
-#include "event.h"
+#include "actions.h"
 #include "string.h"
 #include "stdlib.h"
 
@@ -196,8 +196,7 @@ event_mperm_check(unsigned int id, char *user, int level){
     return ret;
   }
   if (ret!=0){
-    fprintf(stderr, "Error: can't get %d event information: %s\n",
-      id, db_strerror(ret));
+    fprintf(stderr, "Error: database error: %s\n", db_strerror(ret));
     return ret;
   }
   obj = dbt2event(&val);
@@ -260,13 +259,16 @@ do_event_edit(char * user, int level, char **argv){
   /* Check permissions */
   if (event_mperm_check(id, user, level)!=0) return -1;
 
-  /* check that metadata exists, get old data */
+  /* check that event exists, get old data */
   key = mk_uint_dbt(&id);
   oval = mk_empty_dbt();
   ret = dbs.events->get(dbs.events, NULL, &key, &oval, 0);
+  if (ret==DB_NOTFOUND){
+    fprintf(stderr, "Error: event not found: %d \n", id);
+    return ret;
+  }
   if (ret!=0){
-    fprintf(stderr, "Error: can't get event: %s\n",
-      db_strerror(ret));
+    fprintf(stderr, "Error: database error: %s\n", db_strerror(ret));
     return ret;
   }
   oev = dbt2event(&oval);
