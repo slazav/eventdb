@@ -2,6 +2,23 @@
 #include "string.h"
 #include "stdlib.h"
 
+/*********************************************************************/
+/* Event structure. In the database data is written after
+   this structure, and pointers contain offsets from the beginning of
+   the structure. */
+typedef struct {
+  int ctime, mtime;
+  int date1, date2;
+  char * title,
+       * body,
+       * people,
+       * route,
+       * owner;
+  int ntags;  /* number of int tags */
+  int * tags;
+} event_t;
+
+/*********************************************************************/
 /* Build DBT object from event structure.
    Html <tags> is converted to [tags], '\n' is converted to ' '
    in all fields but 'body'.
@@ -83,6 +100,7 @@ print_event(int id, event_t * ev){
   int i;
   printf("<event id=%d>\n", id, ev->date1, ev->date2);
   printf(" <ctime>%d</ctime>\n",   ev->ctime);
+  printf(" <mtime>%d</mtime>\n",   ev->mtime);
   printf(" <date1>%d</date1>\n",   ev->date1);
   printf(" <date2>%d</date2>\n",   ev->date2);
   printf(" <title>%s</title>\n",  ev->title);
@@ -90,7 +108,6 @@ print_event(int id, event_t * ev){
   printf(" <people>%s</people>\n",ev->people);
   printf(" <route>%s</route>\n",  ev->route);
   printf(" <owner>%s</owner>\n",  ev->owner);
-  printf(" <>%s</owner>\n",  ev->owner);
   printf(" <tags>");
   for (i=0; i<ev->ntags; i++) printf("%s%d", i==0?"":",", ev->tags[i]);
   printf("</tags>\n");
@@ -123,61 +140,55 @@ event_last_id(){
   return id;
 }
 
-/*********************************************************************/
-
+/* get event information from argv[0..6] and put it to event and tags */
 int
-event_write(unsigned int id, event_t * event, int overwrite){
-  int ret;
-  DBT key = mk_uint_dbt(&id);
-  DBT val = event2dbt(event);
+event_parse(char **argv, event_t * event, int tags[MAX_TAGS]){
+  char *stag, *prev;
+  int i;
 
-  if (val.data==NULL) return 1;
+  event->title  = argv[0];
+  event->body   = argv[1];
+  event->people = argv[2];
+  event->route  = argv[3];
+  event->date1 = get_int(argv[4], "date1"); if (event->date1<0) return -1;
+  event->date2 = get_int(argv[5], "date2"); if (event->date2<0) return -1;
 
-  if (id<1){
-    fprintf(stderr, "Error: wrong event id: %d\n", id);
-    return 1;
+  if (event->date2<event->date1) event->date2=event->date1;
+
+  stag = argv[6], i=0;
+  while (stag && (prev = strsep(&stag, ",:; \n\t"))){
+    if (i>MAX_TAGS-1){
+      fprintf(stderr, "Too many tags (> %d)\n", MAX_TAGS-1);
+      return -1;
+    }
+    if (strlen(prev)){ tags[i] = atoi(prev);
+      if (tags[i]==0){
+        fprintf(stderr, "Error: bad tag: %s\n", prev);
+        return -1;
+      }
+    }
+    i++;
   }
-
-  ret = dbs.events->put(dbs.events, NULL, &key, &val,
-             overwrite? 0:DB_NOOVERWRITE);
-  if (ret!=0)
-    fprintf(stderr, "Error: can't write user information: %s\n",
-      db_strerror(ret));
-
-  free(val.data);
-  return ret;
+  event->tags = tags;
+  event->ntags = i;
+  return 0;
 }
 
+/* Check permissions for data modifications:
+  ANON - no
+  NOAUTH and NORM - owner only,
+  MODER and higher - yes */
 int
-event_create(event_t * event){
-  int id,ret;
-
-  if ((id = event_last_id(dbs))<0) return -1;
-  id++;
-
-  ret = event_write(id, event, 1);
-  if (ret == 0) printf("%d\n", id);
-  return ret;
-}
-
-int
-event_delete(unsigned int id){
-  int ret;
-  DBT key = mk_uint_dbt(&id);
-
-  ret = dbs.events->del(dbs.events, NULL, &key, 0);
-  if (ret!=0)
-    fprintf(stderr, "Error: can't delete event: %s\n",
-      db_strerror(ret));
-  return ret;
-}
-
-int
-event_check_owner(unsigned int id, char *user){
+event_mperm_check(unsigned int id, char *user, int level){
   int ret;
   DBT key = mk_uint_dbt(&id);
   DBT val = mk_empty_dbt();
   event_t obj;
+
+  if (level_check(level, LVL_NOAUTH)!=0) return -1;
+  if (level >= LVL_MODER) return 0;
+
+  /* get event owner */
   ret = dbs.events->get(dbs.events, NULL, &key, &val, 0);
 
   if (ret==DB_NOTFOUND){
@@ -198,17 +209,132 @@ event_check_owner(unsigned int id, char *user){
   return 0;
 }
 
+/*********************************************************************/
+
 int
-event_show(unsigned int id){
+do_event_create(char * user, int level, char **argv){
+  unsigned int id;
+  int tags[MAX_TAGS];
+  event_t ev;
+  DBT key, val;
+  int ret;
+
+  /* Check permissions: only ANON can't create files */
+  if (level_check(level, LVL_NOAUTH)!=0) return -1;
+
+  /* Find last existing event id */
+  if ((id = event_last_id(dbs))<0) return -1;
+  id++;
+
+  /* Parse arguments and make DBT for new event */
+  if (event_parse(argv, &ev, tags)!=0) return -1;
+  ev.ctime = time(NULL);
+  ev.mtime = ev.ctime;
+  ev.owner = user;
+  key = mk_uint_dbt(&id);
+  val = event2dbt(&ev); /* do free before return! */
+  if (val.data==NULL) return -1;
+
+  /* write event */
+  ret = dbs.events->put(dbs.events, NULL, &key, &val, DB_NOOVERWRITE);
+  if (ret!=0)
+    fprintf(stderr, "Error: can't write event: %s\n",
+      db_strerror(ret));
+
+  free(val.data);
+  return ret;
+}
+
+int
+do_event_edit(char * user, int level, char **argv){
+  unsigned int id;
+  int tags[MAX_TAGS];
+  event_t ev, oev;
+  DBT key, val, oval;
+  int ret;
+
+  /* get id from cmdline */
+  id = get_uint(argv[0], "event id");
+  if (id == 0)  return -1;
+
+  /* Check permissions */
+  if (event_mperm_check(id, user, level)!=0) return -1;
+
+  /* check that metadata exists, get old data */
+  key = mk_uint_dbt(&id);
+  oval = mk_empty_dbt();
+  ret = dbs.events->get(dbs.events, NULL, &key, &oval, 0);
+  if (ret!=0){
+    fprintf(stderr, "Error: can't get event: %s\n",
+      db_strerror(ret));
+    return ret;
+  }
+  oev = dbt2event(&oval);
+
+  /* Parse arguments and make DBT for new event */
+  if (event_parse(argv+1, &ev, tags)!=0) return -1;
+  ev.mtime = time(NULL);
+  ev.ctime = oev.ctime;
+  ev.owner = oev.owner;
+  val = event2dbt(&ev); /* do free before return! */
+  if (val.data==NULL) return -1;
+
+  /* write event */
+  ret = dbs.events->put(dbs.events, NULL, &key, &val, 0);
+  if (ret!=0)
+    fprintf(stderr, "Error: can't write event: %s\n",
+      db_strerror(ret));
+
+  free(val.data);
+  return ret;
+}
+
+
+int
+do_event_delete(char * user, int level, char **argv){
+  unsigned int id;
+  int ret;
+  DBT key = mk_uint_dbt(&id);
+
+  /* get id from cmdline */
+  id = get_uint(argv[0], "event id");
+  if (id == 0)  return -1;
+
+  /* Check permissions */
+  if (event_mperm_check(id, user, level)!=0) return -1;
+
+  /* delete event */
+  ret = dbs.events->del(dbs.events, NULL, &key, 0);
+  if (ret==DB_NOTFOUND){
+    fprintf(stderr, "Error: event not found: %d \n", id);
+    return ret;
+  }
+  else if (ret!=0){
+    fprintf(stderr, "Error: database error: %s\n", db_strerror(ret));
+    return ret;
+  }
+  return ret;
+}
+
+int
+do_event_show(char * user, int level, char **argv){
+  unsigned int id;
   int ret;
   DBT key = mk_uint_dbt(&id);
   DBT val = mk_empty_dbt();
   event_t ev;
 
+  /* get id from cmdline */
+  id = get_uint(argv[0], "event id");
+  if (id == 0)  return -1;
+
   ret = dbs.events->get(dbs.events, NULL, &key, &val, 0);
+  if (ret==DB_NOTFOUND){
+    fprintf(stderr, "Error: event not found: %d \n", id);
+    return ret;
+  }
   if (ret!=0){
-    fprintf(stderr, "Error: can't get event %d: %s\n",
-      id, db_strerror(ret));
+    fprintf(stderr, "Error: database error: %s\n", db_strerror(ret));
     return ret;
   }
   ev = dbt2event(&val);
@@ -217,23 +343,26 @@ event_show(unsigned int id){
 }
 
 int
-event_search(const char * txt, event_t * mask){
+do_event_search(char * user, int level, char **argv){
   int ret, i, j;
   unsigned int d1,d2;
+  int tags[MAX_TAGS];
+  event_t mask, ev;
   DBC *curs;
   DBT key = mk_empty_dbt();
   DBT val = mk_empty_dbt();
-  event_t ev;
+  char * txt = argv[0];
+
+  if (event_parse(argv+1, &mask, tags)!=0) return -1;
 
   ret = dbs.events->cursor(dbs.events, NULL, &curs, 0);
   if (ret!=0){
-    fprintf(stderr, "Error: can't get id from database: %s \n",
-      db_strerror(ret));
+    fprintf(stderr, "Error: database error: %s \n", db_strerror(ret));
     return ret;
   }
 
-  d1 = (mask->date1 >= 0)?  mask->date1:0;
-  d2 = (mask->date2 >= 0)?  mask->date2:~0;
+  d1 = (mask.date1 >= 0)?  mask.date1:0;
+  d2 = (mask.date2 >= 0)?  mask.date2:~0;
   if (d2<d1) d2=d1;
 
   while ((ret = curs->get(curs, &key, &val, DB_NEXT))==0){
@@ -243,21 +372,21 @@ event_search(const char * txt, event_t * mask){
     if (d2 && d2 < ev.date1) continue;
 
     /* search by tags: */
-    if (mask->ntags > 0){
+    if (mask.ntags > 0){
       int fl=0;
-      for (i=0; i<mask->ntags; i++){
+      for (i=0; i<mask.ntags; i++){
         for (j=0; j<ev.ntags; j++){
-          if (mask->tags[i] == ev.tags[j]) fl=1;
+          if (mask.tags[i] == ev.tags[j]) fl=1;
         }
       }
       if (fl==0) continue;
     }
 
     /* search in text fields: */
-    if (strlen(mask->title)  && !strcasestr(ev.title,  mask->title))  continue;
-    if (strlen(mask->body)   && !strcasestr(ev.body,   mask->body))   continue;
-    if (strlen(mask->people) && !strcasestr(ev.people, mask->people)) continue;
-    if (strlen(mask->route)  && !strcasestr(ev.route,  mask->route))  continue;
+    if (strlen(mask.title)  && !strcasestr(ev.title,  mask.title))  continue;
+    if (strlen(mask.body)   && !strcasestr(ev.body,   mask.body))   continue;
+    if (strlen(mask.people) && !strcasestr(ev.people, mask.people)) continue;
+    if (strlen(mask.route)  && !strcasestr(ev.route,  mask.route))  continue;
 
     /* search in text fields: */
     if (strlen(txt) && (
@@ -272,8 +401,7 @@ event_search(const char * txt, event_t * mask){
   if (curs != NULL) curs->close(curs);
 
   if (ret!=DB_NOTFOUND){
-    fprintf(stderr, "Error: can't get id from database: %s \n",
-      db_strerror(ret));
+    fprintf(stderr, "Error: database error: %s \n", db_strerror(ret));
     return ret;
   }
   return 0;

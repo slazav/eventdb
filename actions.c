@@ -44,7 +44,7 @@ get_int(const char *str, const char *name){
   int ret;
   if (strlen(str)==0) return 0;
   ret=atoi(str);
-  if (ret==0){
+  if (ret<=0){
     fprintf(stderr, "Error: bad %s: %s\n", name, str);
     return -1;
   }
@@ -173,86 +173,4 @@ int
 do_user_show(char * user, int level, char **argv){
   return user_show(argv[0], USR_SHOW_NORM);
 }
-
-/*********************************************************************/
-
-/* get event information from argv[0..6] and put it to event and tags */
-int
-event_parse(char **argv, event_t * event, int tags[MAX_TAGS]){
-  char *stag, *prev;
-  int i;
-
-  event->title  = argv[0];
-  event->body   = argv[1];
-  event->people = argv[2];
-  event->route  = argv[3];
-  event->date1 = get_int(argv[4], "date1"); if (event->date1<0)  return -1;
-  event->date2 = get_int(argv[5], "date2"); if (event->date2<0)  return -1;
-
-  stag = argv[6], i=0;
-  while (stag && (prev = strsep(&stag, ",:; \n\t"))){
-    if (i>MAX_TAGS-1){
-      fprintf(stderr, "Too many tags (> %d)\n", MAX_TAGS-1);
-      return 1;
-    }
-    if (strlen(prev)){ tags[i] = atoi(prev);
-      if (tags[i]==0){
-        fprintf(stderr, "Error: bad tag: %s\n", prev);
-        return 1;
-      }
-    }
-    i++;
-  }
-  event->tags = tags;
-  event->ntags = i;
-  return 0;
-}
-
-int
-do_event_create(char * user, int level, char **argv){
-  int tags[MAX_TAGS];
-  event_t event;
-  event.ctime = time(NULL);
-  event.owner = user;
-  return level_check(level, LVL_NOAUTH) ||
-         event_parse(argv, &event, tags) ||
-         event_create(&event);
-}
-
-int
-do_event_edit(char * user, int level, char **argv){
-  int tags[MAX_TAGS];
-  event_t event;
-  unsigned int id = get_uint(argv[0], "event id");
-  if (id == 0)  return -1;
-  return level_check(level, LVL_NOAUTH) ||
-         event_check_owner(id, user) ||
-         event_parse(argv+1, &event, tags) ||
-         event_write(id, &event, 1);
-}
-
-int
-do_event_delete(char * user, int level, char **argv){
-  unsigned int id = get_uint(argv[0], "event id");
-  if (id == 0)  return -1;
-  return level_check(level, LVL_NOAUTH) ||
-         event_check_owner(id, user) ||
-         event_delete(id);
-}
-
-int
-do_event_show(char * user, int level, char **argv){
-  unsigned int id = get_uint(argv[0], "event id");
-  if (id == 0)  return -1;
-  return event_show(id);
-}
-
-int
-do_event_search(char * user, int level, char **argv){
-  int tags[MAX_TAGS];
-  event_t event;
-  return event_parse(argv+1, &event, tags) ||
-         event_search(argv[0], &event);
-}
-
 

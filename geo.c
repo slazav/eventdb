@@ -13,7 +13,7 @@
    this structure, and pointers contain offsets from the beginning of
    the structure. */
 typedef struct {
-  int mtime;
+  int mtime, ctime;
   int date1, date2;
   int length;
   char * comm,
@@ -92,6 +92,7 @@ void
 print_geo(char * fname, geo_t * obj){
   int i;
   printf("<geo file=\"%s\">\n", fname);
+  printf(" <ctime>%d</ctime>\n",   obj->ctime);
   printf(" <mtime>%d</mtime>\n",   obj->mtime);
   printf(" <date1>%d</date1>\n",   obj->date1);
   printf(" <date2>%d</date2>\n",   obj->date2);
@@ -258,18 +259,19 @@ geo_mperm_check(char * fname, char *user, int level){
 
 int
 do_geo_create(char * user, int level, char **argv){
-  int tags[MAX_TAGS];
   char * fname = argv[0];
+  int tags[MAX_TAGS];
   geo_t geo;
-  int ret;
   DBT key, val;
+  int ret;
 
   /* Check permissions: only ANON can't create files */
   if (level_check(level, LVL_NOAUTH)!=0) return -1;
 
   /* Parse arguments and make db key-val pair*/
   if (geo_parse(argv+1, &geo, tags)) return -1;
-  geo.mtime = time(NULL);
+  geo.ctime = time(NULL);
+  geo.mtime = geo.ctime;
   geo.owner = user;
   key = mk_string_dbt(fname);
   val = geo2dbt(&geo); /* do free before return! */
@@ -293,20 +295,51 @@ do_geo_create(char * user, int level, char **argv){
 }
 
 int
-do_geo_replace(char * user, int level, char **argv){
-  char *fname = argv[0];
+do_geo_edit(char * user, int level, char **argv){
+  char * fname = argv[0];
+  int tags[MAX_TAGS];
+  geo_t geo, ogeo;
+  DBT key, val, oval;
+  int ret;
 
-  /* Check permissions and replace file */
-  return geo_mperm_check(fname, user, level) ||
-         put_file(fname, 1);
+  /* Check permissions */
+  if (geo_mperm_check(fname, user, level)!=0) return -1;
+
+  /* check that metadata exists, get old data */
+  key = mk_string_dbt(fname);
+  oval = mk_empty_dbt();
+  ret = dbs.tracks->get(dbs.tracks, NULL, &key, &oval, 0);
+  if (ret!=0){
+    fprintf(stderr, "Error: can't get geodata information: %s\n",
+      db_strerror(ret));
+    return ret;
+  }
+  ogeo = dbt2geo(&oval);
+
+  /* Parse arguments and make DBT for new metadata */
+  if (geo_parse(argv+1, &geo, tags)) return -1;
+  geo.mtime = time(NULL);
+  geo.ctime = ogeo.ctime;
+  geo.owner = ogeo.owner;
+  val = geo2dbt(&geo); /* do free before return! */
+  if (val.data==NULL) return -1;
+
+  /* write metadata */
+  ret = dbs.tracks->put(dbs.tracks, NULL, &key, &val, 0);
+  if (ret!=0)
+    fprintf(stderr, "Error: can't write geodata information: %s\n",
+      db_strerror(ret));
+
+  free(val.data);
+  return ret;
 }
 
 int
 do_geo_delete(char * user, int level, char **argv){
-  int ret;
   char *path;
   char *fname = argv[0];
   DBT key = mk_string_dbt(fname);
+  int ret;
 
   /* Check permissions */
   if (geo_mperm_check(fname, user, level)!=0) return -1;
@@ -330,60 +363,29 @@ do_geo_delete(char * user, int level, char **argv){
 }
 
 int
-do_geo_edit(char * user, int level, char **argv){
-  int tags[MAX_TAGS];
-  char * fname = argv[0];
-  geo_t geo, ogeo;
-  int ret;
-  DBT key, val, oval;
+do_geo_replace(char * user, int level, char **argv){
+  char *fname = argv[0];
 
-  /* Check permissions */
-  if (geo_mperm_check(fname, user, level)!=0) return -1;
-
-  key = mk_string_dbt(fname);
-  oval = mk_empty_dbt();
-
-  /* check that metadata exists, get old data */
-  ret = dbs.tracks->get(dbs.tracks, NULL, &key, &oval, 0);
-  if (ret!=0){
-    fprintf(stderr, "Error: can't get geodata information: %s\n",
-      db_strerror(ret));
-    return ret;
-  }
-  ogeo = dbt2geo(&oval);
-
-  /* Parse arguments and make db val pair */
-  if (geo_parse(argv+1, &geo, tags)) return -1;
-  geo.mtime = time(NULL);
-  geo.owner = ogeo.owner;
-  val = geo2dbt(&geo); /* do free before return! */
-  if (val.data==NULL) return -1;
-
-  /* write metadata */
-  ret = dbs.tracks->put(dbs.tracks, NULL, &key, &val, 0);
-  if (ret!=0)
-    fprintf(stderr, "Error: can't write geodata information: %s\n",
-      db_strerror(ret));
-
-  free(val.data);
-  return ret;
+  /* Check permissions and replace file */
+  return geo_mperm_check(fname, user, level) ||
+         put_file(fname, 1);
 }
-
 
 int
 do_geo_show(char * user, int level, char **argv){
   char *fname = argv[0];
-  int ret;
   DBT key = mk_string_dbt(fname);
   DBT val = mk_empty_dbt();
   geo_t obj;
+  int ret;
+
   ret = dbs.tracks->get(dbs.tracks, NULL, &key, &val, 0);
   if (ret==DB_NOTFOUND){
     fprintf(stderr, "Error: file not found: %s \n", fname);
     return ret;
   }
   if (ret!=0){
-    fprintf(stderr, "Error: can't get file information %s: %s\n",
+    fprintf(stderr, "Error: database error: %s: %s\n",
       fname, db_strerror(ret));
     return ret;
   }
@@ -394,7 +396,6 @@ do_geo_show(char * user, int level, char **argv){
 
 int
 do_geo_list(char * user, int level, char **argv){
-
   DBC *curs;
   DBT key = mk_empty_dbt();
   DBT val = mk_empty_dbt();

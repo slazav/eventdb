@@ -36,7 +36,4 @@ extern action_func do_level_show, do_root_add, do_user_add, do_user_del,
                    do_user_on, do_user_off, do_user_chpwd, do_user_level_set,
                    do_user_mypwd, do_user_list, do_user_dump, do_user_show;
 
-extern action_func do_event_create, do_event_edit, do_event_delete,
-                   do_event_show, do_event_search;
-
 #endif

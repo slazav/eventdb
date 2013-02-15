@@ -14,6 +14,6 @@
 #define GEO_MAX_FNAME 32
 #define GEO_MAX_FSIZE 100000
 
-extern action_func do_geo_create, do_geo_delete, do_geo_replace,
-                   do_geo_edit, do_geo_show, do_geo_list;
+extern action_func do_geo_create, do_geo_edit, do_geo_delete,
+                   do_geo_replace, do_geo_show, do_geo_list;
 #endif

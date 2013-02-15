@@ -2,54 +2,9 @@
 #define EVENT_H
 
 #include "dbs.h"
+#include "actions.h"
 
-/* Low-level event operations: no permission checking.
-   When event is recorded to the database all <html tags>
-   are converted to [html tags] and '\n' is converted to ' '
-   in all fields but body.
-   Print and search queries print events in an xml-like format.
-*/
-
-/* Event structure. In the database data is written after
-   this structure, and pointers contain offsets from the beginning of
-   the structure. */
-typedef struct {
-  int ctime;
-  int date1, date2;
-  char * title,
-       * body,
-       * people,
-       * route,
-       * owner;
-  int ntags;  /* number of int tags */
-  int * tags;
-} event_t;
-
-/* Write event to the database.
-   Return 0 on success. Print error message on errors. */
-int event_write(unsigned int id, event_t * event, int overwrite);
-
-/* Write new event to the database, print id to stdout.
-   Return 0 on success. Print error message on errors. */
-int event_create(event_t * event);
-
-/* Delete event from the database.
-   Return 0 on success. Print error message on errors. */
-int event_delete(unsigned int id);
-
-/* Check owner */
-int event_check_owner(unsigned int id, char *user);
-
-/* Get event from the database and print it to stdout in
-   xml-like format.
-   Return 0 on success. Print error message on errors. */
-int event_show(unsigned int id);
-
-/* Search events corresponding to the mask and print them to
-   stdout in xml-like format.
-   Use date1=-1
-   Return 0 on success. Print error message on errors. */
-int event_search(const char * txt, event_t * mask);
-
+extern action_func do_event_create, do_event_edit, do_event_delete,
+                   do_event_show, do_event_search;
 
 #endif
