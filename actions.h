@@ -5,9 +5,13 @@
 
 #define LVL_ROOT  100
 #define LVL_ADMIN  99
+#define LVL_MODER   3
 #define LVL_NORM    2
 #define LVL_NOAUTH  1
 #define LVL_ANON    0
+
+/* just a tmp buffer size: */
+#define MAX_TAGS 1024
 
 /* Standard actions with string parameter parsing and some
    permision checking logic. Authentication, user level and
@@ -19,6 +23,10 @@ extern const char * superuser;
    Return negative value on error (bad password, db error etc),
    zero if password is empty or user level. */
 int auth(const char * name, char * pwd);
+
+int level_check(int user_level, int needed_level);
+unsigned int get_uint(const char *str, const char *name);
+int get_int(const char *str, const char *name);
 
 /* Standard action arguments: user name, user level, arguments
    Number of arguments is kept in actions structure (eventdb.c)*/
@@ -32,8 +40,5 @@ extern action_func do_event_create, do_event_edit, do_event_delete,
                    do_event_show, do_event_search;
 
 extern action_func do_log_new, do_log_print, do_log_tsearch;
-
-extern action_func do_geo_create, do_geo_delete, do_geo_replace,
-                   do_geo_edit, do_geo_show, do_geo_list;
 
 #endif

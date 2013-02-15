@@ -8,9 +8,6 @@
 
 const char * superuser = "root";
 
-/* just a tmp buffer size: */
-#define MAX_TAGS 1024
-
 /*********************************************************************/
 
 int auth(const char * name, char * pwd){
@@ -287,87 +284,8 @@ do_log_tsearch(char * user, int level, char **argv){
   return log_tsearch(t1, t2);
 }
 
-/*********************************************************************/
 
 
-/* get geodata information from argv[0..5] and put it to geo and tags */
-int
-geo_parse(char **argv, geo_t * geo, int tags[MAX_TAGS]){
-  char *stag, *prev;
-  int i;
 
-  geo->comm  = argv[0];
-  geo->auth  = argv[1];
-  geo->date1 = get_int(argv[2], "date1");   if (geo->date1<0)  return -1;
-  geo->date2 = get_int(argv[3], "date2");   if (geo->date2<0)  return -1;
-  geo->length = get_int(argv[4], "length"); if (geo->length<0) return -1;
 
-  stag = argv[5], i=0;
-  while (stag && (prev = strsep(&stag, ",:; \n\t"))){
-    if (i>MAX_TAGS-1){
-      fprintf(stderr, "Too many tags (> %d)\n", MAX_TAGS-1);
-      return 1;
-    }
-    if (strlen(prev)){ tags[i] = atoi(prev);
-      if (tags[i]==0){
-        fprintf(stderr, "Error: bad tag: %s\n", prev);
-        return 1;
-      }
-    }
-    i++;
-  }
-  geo->tags = tags;
-  geo->ntags = i;
-  return 0;
-}
-
-int
-do_geo_create(char * user, int level, char **argv){
-  int tags[MAX_TAGS];
-  char * fname = argv[0];
-  geo_t geo;
-  geo.ctime = time(NULL);
-  geo.owner = user;
-  return level_check(level, LVL_NOAUTH) ||
-         geo_parse(argv+1, &geo, tags) ||
-         geo_create(fname, &geo);
-}
-
-int
-do_geo_edit(char * user, int level, char **argv){
-  int tags[MAX_TAGS];
-  char * fname = argv[0];
-  geo_t geo;
-  return level_check(level, LVL_NOAUTH) ||
-         geo_check_owner(fname, user) ||
-         geo_parse(argv+1, &geo, tags) ||
-         geo_edit(fname, &geo);
-}
-
-int
-do_geo_replace(char * user, int level, char **argv){
-  char *fname = argv[0];
-  return level_check(level, LVL_NOAUTH) ||
-         geo_check_owner(fname, user) ||
-         geo_replace(fname);
-}
-
-int
-do_geo_delete(char * user, int level, char **argv){
-  char *fname = argv[0];
-  return level_check(level, LVL_NOAUTH) ||
-         geo_check_owner(fname, user) ||
-         geo_delete(fname);
-}
-
-int
-do_geo_show(char * user, int level, char **argv){
-  char *fname = argv[0];
-  return geo_show(fname);
-}
-
-int
-do_geo_list(char * user, int level, char **argv){
-  return geo_list();
-}
 
