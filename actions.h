@@ -39,6 +39,4 @@ extern action_func do_level_show, do_root_add, do_user_add, do_user_del,
 extern action_func do_event_create, do_event_edit, do_event_delete,
                    do_event_show, do_event_search;
 
-extern action_func do_log_new, do_log_print, do_log_tsearch;
-
 #endif

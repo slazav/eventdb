@@ -1,8 +1,6 @@
 #include "actions.h"
 #include "user.h"
 #include "event.h"
-#include "log.h"
-#include "geo.h"
 #include <string.h>
 #include <time.h>
 
@@ -256,36 +254,5 @@ do_event_search(char * user, int level, char **argv){
   return event_parse(argv+1, &event, tags) ||
          event_search(argv[0], &event);
 }
-
-/*********************************************************************/
-
-int
-do_log_new(char * user, int level, char **argv){
-  log_t log;
-  log.event  = atoi(argv[0]);
-  log.user   = argv[1];
-  log.action = argv[2];
-  log.msg    = argv[3];
-  return log_new(&log);
-}
-
-int
-do_log_print(char * user, int level, char **argv){
-  unsigned int id = atoi(argv[0]);
-  return log_print(id);
-}
-
-int
-do_log_tsearch(char * user, int level, char **argv){
-  unsigned int t1,t2;
-  t1=t2=time(NULL);
-  if (strlen(argv[0])) t1=atoi(argv[0]);
-  if (strlen(argv[1])) t2=atoi(argv[1]);
-  return log_tsearch(t1, t2);
-}
-
-
-
-
 
 

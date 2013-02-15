@@ -175,7 +175,7 @@ event_delete(unsigned int id){
 int
 event_check_owner(unsigned int id, char *user){
   int ret;
-  DBT key = mk_uint_dbt(id);
+  DBT key = mk_uint_dbt(&id);
   DBT val = mk_empty_dbt();
   event_t obj;
   ret = dbs.events->get(dbs.events, NULL, &key, &val, 0);

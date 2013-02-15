@@ -3,6 +3,16 @@
 #include "stdlib.h"
 #include "time.h"
 
+/*********************************************************************/
+/* structure for log database */
+typedef struct {
+  int event;
+  char * user,
+       * action,
+       * msg;
+} log_t;
+
+/*********************************************************************/
 /* Build DBT object from event structure.
    Html <tags> is converted to [tags], '\n' is converted to ' '
    in all fields but 'body'.
@@ -72,14 +82,22 @@ print_log(int id, log_t * l1){
 /*********************************************************************/
 
 int
-log_new(log_t * log){
-  int ret;
+do_log_new(char * user, int level, char **argv){
   unsigned int id = time(NULL);
-  DBT key = mk_uint_dbt(&id);
-  DBT val = log2dbt(log);
+  int ret;
+  log_t log;
+  DBT key, val;
 
-  if (val.data==NULL) return 1;
+  log.event  = atoi(argv[0]);
+  log.user   = argv[1];
+  log.action = argv[2];
+  log.msg    = argv[3];
 
+  key = mk_uint_dbt(&id);
+  val = log2dbt(&log); /* do free after use!*/
+  if (val.data==NULL) return -1;
+
+  /* Try to put log, if id exists, increase it: */
   do {
     ret = dbs.logs->put(dbs.logs, NULL, &key, &val, DB_NOOVERWRITE);
     id++;
@@ -95,8 +113,9 @@ log_new(log_t * log){
 }
 
 int
-log_print(unsigned int id){
+do_log_print(char * user, int level, char **argv){
   int ret;
+  unsigned int id = atoi(argv[0]);
   DBT key = mk_uint_dbt(&id);
   DBT val = mk_empty_dbt();
   log_t l1;
@@ -113,20 +132,26 @@ log_print(unsigned int id){
 }
 
 int
-log_tsearch(unsigned int t1, unsigned int t2){
+do_log_tsearch(char * user, int level, char **argv){
   int ret;
+  unsigned int t1,t2;
   DBC *curs;
-  DBT key = mk_uint_dbt(&t1);
-  DBT val = mk_empty_dbt();
+  DBT key,val;
+
+  t1=t2=time(NULL);
+  if (strlen(argv[0])) t1=atoi(argv[0]);
+  if (strlen(argv[1])) t2=atoi(argv[1]);
+  if (t2<t1) t2=t1;
+
+  key = mk_uint_dbt(&t1);
+  val = mk_empty_dbt();
 
   ret = dbs.logs->cursor(dbs.logs, NULL, &curs, 0);
   if (ret!=0){
-    fprintf(stderr, "Error: can't get log entry: %s \n",
+    fprintf(stderr, "Error: database error: %s \n",
       db_strerror(ret));
     return ret;
   }
-
-  if (t2<t1) t2=t1;
 
   ret = curs->get(curs, &key, &val, DB_SET_RANGE);
   while (ret==0 && *(int *)key.data <= t2){
@@ -143,4 +168,9 @@ log_tsearch(unsigned int t1, unsigned int t2){
     return ret;
   }
   return 0;
+}
+
+int
+do_log_esearch(char * user, int level, char **argv){
+  /*TODO*/
 }

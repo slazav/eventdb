@@ -5,6 +5,7 @@
 
 /* io buffer */
 #define BUFLEN 8192
+#define PATHLEN 1024
 
 /*********************************************************************/
 
@@ -130,13 +131,13 @@ check_fname(const char * fname){
 /* Build absolute filename (check_fname included)*/
 char *
 build_path(const char *fname){
-  static char path[BUFLEN];
+  static char path[PATHLEN];
   int l1, l2;
 
   if (check_fname(fname)!=0) return NULL;
   l1 = strlen(GEO_FDIR);
   l2 = strlen(fname);
-  if (l1 + l2 + 2 > BUFLEN){
+  if (l1 + l2 + 2 > PATHLEN){
     fprintf(stderr, "Error: filename buffer is too short\n");
     return NULL;
   }
@@ -332,28 +333,31 @@ int
 do_geo_edit(char * user, int level, char **argv){
   int tags[MAX_TAGS];
   char * fname = argv[0];
-  geo_t geo;
+  geo_t geo, ogeo;
   int ret;
-  DBT key, val;
+  DBT key, val, oval;
 
   /* Check permissions */
   if (geo_mperm_check(fname, user, level)!=0) return -1;
 
-  /* Parse arguments and make db key-val pair*/
-  if (geo_parse(argv+1, &geo, tags)) return -1;
-  geo.mtime = time(NULL);
-  geo.owner = user;
   key = mk_string_dbt(fname);
-  val = geo2dbt(&geo); /* do free before return! */
+  oval = mk_empty_dbt();
 
-
-  /* check that metadata exists */
-  ret = dbs.tracks->get(dbs.tracks, NULL, &key, &val, 0);
+  /* check that metadata exists, get old data */
+  ret = dbs.tracks->get(dbs.tracks, NULL, &key, &oval, 0);
   if (ret!=0){
     fprintf(stderr, "Error: can't get geodata information: %s\n",
       db_strerror(ret));
     return ret;
   }
+  ogeo = dbt2geo(&oval);
+
+  /* Parse arguments and make db val pair */
+  if (geo_parse(argv+1, &geo, tags)) return -1;
+  geo.mtime = time(NULL);
+  geo.owner = ogeo.owner;
+  val = geo2dbt(&geo); /* do free before return! */
+  if (val.data==NULL) return -1;
 
   /* write metadata */
   ret = dbs.tracks->put(dbs.tracks, NULL, &key, &val, 0);
