@@ -32,12 +32,12 @@ check 0 "24 anon ok"                ""  ""      level_show
 
 echo "======== Modify User ========"
 
-check 1 "30 permission denied"          "sla" "1231" user_off sla
-check 0 "31 sla deactivated"           "root" "1231" user_off sla
-check 1 "32 root can't be deactivated" "root" "1231" user_off root
+check 1 "30 permission denied"          "sla" "1231" user_activ_set sla off
+check 0 "31 sla deactivated"           "root" "1231" user_activ_set sla off
+check 1 "32 root can't be deactivated" "root" "1231" user_activ_set root off
 check 1 "33 sla deactivated"            "sla" "1231" user_chpwd sla 234
 check 1 "34 deactivated!"               "sla" "1231" user_check
-check 0 "35 sla activated"             "root" "1231" user_on sla
+check 0 "35 sla activated"             "root" "1231" user_activ_set sla on
 check 1 "36 sla chpwd"                  "sla" "1231" user_chpwd sla 234
 check 1 "37 short pwd"                  "sla" "1231" user_mypwd 234
 check 0 "38 sla mypwd"                  "sla" "1231" user_mypwd 2342

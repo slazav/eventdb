@@ -3,6 +3,17 @@
 #include "stdlib.h"
 #include "errno.h"
 
+/* geodata folder */
+#ifdef MCCME
+#define GEO_FDIR "/home/slazav/CH/gps"
+#else
+#define GEO_FDIR "./gps"
+#endif
+
+/* limits: geodata filename size, geodata file size */
+#define GEO_MAX_FNAME 32
+#define GEO_MAX_FSIZE 100000
+
 /* io buffer */
 #define BUFLEN 8192
 #define PATHLEN 1024
@@ -185,6 +196,7 @@ put_file(char * fname, int overwrite){
     return -1;
   }
   fclose(F);
+  return 0;
 }
 
 
@@ -404,7 +416,7 @@ do_geo_list(char * user, int level, char **argv){
 
   ret = dbs.tracks->cursor(dbs.tracks, NULL, &curs, 0);
   if (ret!=0){
-    fprintf(stderr, "Error: can't get info from database: %s \n",
+    fprintf(stderr, "Error: database error: %s \n",
       db_strerror(ret));
     return ret;
   }
@@ -417,7 +429,7 @@ do_geo_list(char * user, int level, char **argv){
   if (curs != NULL) curs->close(curs);
 
   if (ret!=DB_NOTFOUND){
-    fprintf(stderr, "Error: can't get file info from database: %s \n",
+    fprintf(stderr, "Error: database error: %s \n",
       db_strerror(ret));
     return ret;
   }
