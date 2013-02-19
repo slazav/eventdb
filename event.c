@@ -114,6 +114,7 @@ print_event(int id, event_t * ev){
   printf("</event>\n");
 }
 
+/* get last event id in the database */
 int
 event_last_id(){
   int id, ret;
@@ -241,6 +242,7 @@ do_event_create(char * user, int level, char **argv){
       db_strerror(ret));
 
   free(val.data);
+  printf("%d\n", id);
   return ret;
 }
 
@@ -341,6 +343,35 @@ do_event_show(char * user, int level, char **argv){
   }
   ev = dbt2event(&val);
   print_event(id, &ev);
+  return 0;
+}
+
+int
+do_event_list(char * user, int level, char **argv){
+  DBC *curs;
+  DBT key = mk_empty_dbt();
+  DBT val = mk_empty_dbt();
+  int tags[MAX_TAGS];
+  event_t ev;
+  int ret;
+
+  ret = dbs.events->cursor(dbs.events, NULL, &curs, 0);
+  if (ret!=0){
+    fprintf(stderr, "Error: database error: %s \n", db_strerror(ret));
+    return ret;
+  }
+
+  while ((ret = curs->get(curs, &key, &val, DB_NEXT))==0){
+    ev = dbt2event(&val);
+    print_event(* (int*)key.data, &ev);
+  }
+
+  if (curs != NULL) curs->close(curs);
+
+  if (ret!=DB_NOTFOUND){
+    fprintf(stderr, "Error: database error: %s \n", db_strerror(ret));
+    return ret;
+  }
   return 0;
 }
 

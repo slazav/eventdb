@@ -38,7 +38,7 @@ extern action_func do_level_show, do_root_add, do_user_add, do_user_del,
                    do_user_mypwd, do_user_list, do_user_dump, do_user_show;
 
 extern action_func do_event_create, do_event_edit, do_event_delete,
-                   do_event_show, do_event_search;
+                   do_event_show, do_event_list, do_event_search;
 
 extern action_func do_geo_create, do_geo_edit, do_geo_delete,
                    do_geo_replace, do_geo_show, do_geo_list;

@@ -48,6 +48,8 @@ const action_t actions[] = {
      "<id>", "Delete event"},
   {"event_show", &do_event_show, ACT_RO, 1,
      "<id>", "Print event data"},
+  {"event_list", &do_event_list, ACT_RO, 0,
+     "", "List all events"},
   {"event_search",&do_event_search,ACT_RO, 8,
      "<text> <title> <body> <people> <route> <date1> <date2> <tags>",
      "Find events: use <text> for full text search or special event fields"},
