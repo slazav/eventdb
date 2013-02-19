@@ -59,7 +59,7 @@ log2dbt(log_t * log){
 
 /* Convert DBT structure to log. Data is not copied! */
 log_t
-dbt2log(DBT * dbt){
+dbt2log(const DBT * dbt){
   log_t l1 = * (log_t *)dbt->data;
   /* Overwrite pointers to absolute values */
   l1.user   = (char *)dbt->data + ((void*)l1.user - NULL); /* (char*) + (int)(void*-void*) */

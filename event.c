@@ -82,7 +82,7 @@ event2dbt(event_t * event){
 
 /* Convert DBT structure to event. Data is not copied! */
 event_t
-dbt2event(DBT * dbt){
+dbt2event(const DBT * dbt){
   event_t ev = * (event_t *)dbt->data;
   /* Overwrite pointers to absolute values */
   ev.title  = (char *)dbt->data + ((void*)ev.title - NULL); /* (char*) + (int)(void*-void*) */
@@ -94,9 +94,21 @@ dbt2event(DBT * dbt){
   return ev;
 }
 
+/* date1 extractor for the secondary db */
+int
+db_event_date1(DB *secdb, const DBT *pkey, const DBT *pdata, DBT *skey){
+  static int val;
+  event_t ev = dbt2event(pdata);
+  memset(skey, 0, sizeof(DBT));
+  val=ev.date1;
+  skey->data = &val;
+  skey->size = sizeof(int);
+  return 0;
+}
+
 /* print event to stdout */
 void
-print_event(int id, event_t * ev){
+event_prn(int id, event_t * ev){
   int i;
   printf("<event id=%d>\n", id, ev->date1, ev->date2);
   printf(" <ctime>%d</ctime>\n",   ev->ctime);
@@ -209,15 +221,47 @@ event_mperm_check(unsigned int id, char *user, int level){
   return 0;
 }
 
-/*********************************************************************/
+int
+event_put(int id, event_t *ev, int flags){
+  DBT key = mk_uint_dbt(&id);
+  DBT val = event2dbt(ev); /* do free before return! */
+  int ret;
+
+  if (val.data==NULL) return -1;
+
+  /* write event */
+  ret = dbs.events->put(dbs.events, NULL, &key, &val, flags);
+  if (ret!=0)
+    fprintf(stderr, "Error: can't write event: %s\n",
+      db_strerror(ret));
+  free(val.data);
+  return ret;
+}
 
 int
+event_get(int id, event_t *ev){
+  DBT key = mk_uint_dbt(&id);
+  DBT val = mk_empty_dbt();
+  int ret = dbs.events->get(dbs.events, NULL, &key, &val, 0);
+  if (ret==DB_NOTFOUND){
+    fprintf(stderr, "Error: event not found: %d \n", id);
+    return ret;
+  }
+  if (ret!=0){
+    fprintf(stderr, "Error: database error: %s\n", db_strerror(ret));
+    return ret;
+  }
+  *ev = dbt2event(&val);
+  return 0;
+}
+
+/*********************************************************************/
+/* Actions */
+int
 do_event_create(char * user, int level, char **argv){
-  unsigned int id;
+  int id;
   int tags[MAX_TAGS];
   event_t ev;
-  DBT key, val;
-  int ret;
 
   /* Check permissions: only ANON can't create files */
   if (level_check(level, LVL_NOAUTH)!=0) return -1;
@@ -231,28 +275,17 @@ do_event_create(char * user, int level, char **argv){
   ev.ctime = time(NULL);
   ev.mtime = ev.ctime;
   ev.owner = user;
-  key = mk_uint_dbt(&id);
-  val = event2dbt(&ev); /* do free before return! */
-  if (val.data==NULL) return -1;
 
-  /* write event */
-  ret = dbs.events->put(dbs.events, NULL, &key, &val, DB_NOOVERWRITE);
-  if (ret!=0)
-    fprintf(stderr, "Error: can't write event: %s\n",
-      db_strerror(ret));
-
-  free(val.data);
+  if (event_put(id, &ev, DB_NOOVERWRITE)!=0) return -1;
   printf("%d\n", id);
-  return ret;
+  return 0;
 }
 
 int
 do_event_edit(char * user, int level, char **argv){
-  unsigned int id;
+  int id;
   int tags[MAX_TAGS];
   event_t ev, oev;
-  DBT key, val, oval;
-  int ret;
 
   /* get id from cmdline */
   id = get_uint(argv[0], "event id");
@@ -261,36 +294,15 @@ do_event_edit(char * user, int level, char **argv){
   /* Check permissions */
   if (event_mperm_check(id, user, level)!=0) return -1;
 
-  /* check that event exists, get old data */
-  key = mk_uint_dbt(&id);
-  oval = mk_empty_dbt();
-  ret = dbs.events->get(dbs.events, NULL, &key, &oval, 0);
-  if (ret==DB_NOTFOUND){
-    fprintf(stderr, "Error: event not found: %d \n", id);
-    return ret;
-  }
-  if (ret!=0){
-    fprintf(stderr, "Error: database error: %s\n", db_strerror(ret));
-    return ret;
-  }
-  oev = dbt2event(&oval);
+  if (event_get(id, &oev)!=0) return -1;
 
   /* Parse arguments and make DBT for new event */
   if (event_parse(argv+1, &ev, tags)!=0) return -1;
   ev.mtime = time(NULL);
   ev.ctime = oev.ctime;
   ev.owner = oev.owner;
-  val = event2dbt(&ev); /* do free before return! */
-  if (val.data==NULL) return -1;
 
-  /* write event */
-  ret = dbs.events->put(dbs.events, NULL, &key, &val, 0);
-  if (ret!=0)
-    fprintf(stderr, "Error: can't write event: %s\n",
-      db_strerror(ret));
-
-  free(val.data);
-  return ret;
+  return event_put(id, &ev, 0);
 }
 
 
@@ -322,27 +334,15 @@ do_event_delete(char * user, int level, char **argv){
 
 int
 do_event_show(char * user, int level, char **argv){
-  unsigned int id;
-  int ret;
-  DBT key = mk_uint_dbt(&id);
-  DBT val = mk_empty_dbt();
+  int id;
   event_t ev;
 
   /* get id from cmdline */
   id = get_uint(argv[0], "event id");
   if (id == 0)  return -1;
 
-  ret = dbs.events->get(dbs.events, NULL, &key, &val, 0);
-  if (ret==DB_NOTFOUND){
-    fprintf(stderr, "Error: event not found: %d \n", id);
-    return ret;
-  }
-  if (ret!=0){
-    fprintf(stderr, "Error: database error: %s\n", db_strerror(ret));
-    return ret;
-  }
-  ev = dbt2event(&val);
-  print_event(id, &ev);
+  if (event_get(id, &ev)!=0) return -1;
+  event_prn(id, &ev);
   return 0;
 }
 
@@ -351,19 +351,18 @@ do_event_list(char * user, int level, char **argv){
   DBC *curs;
   DBT key = mk_empty_dbt();
   DBT val = mk_empty_dbt();
-  int tags[MAX_TAGS];
   event_t ev;
   int ret;
 
-  ret = dbs.events->cursor(dbs.events, NULL, &curs, 0);
+  ret = dbs.events->cursor(dbs.d2ev, NULL, &curs, 0);
   if (ret!=0){
     fprintf(stderr, "Error: database error: %s \n", db_strerror(ret));
     return ret;
   }
 
-  while ((ret = curs->get(curs, &key, &val, DB_NEXT))==0){
+  while ((ret = curs->get(curs, &key, &val, DB_PREV))==0){
     ev = dbt2event(&val);
-    print_event(* (int*)key.data, &ev);
+    event_prn(* (int*)key.data, &ev);
   }
 
   if (curs != NULL) curs->close(curs);
@@ -388,7 +387,7 @@ do_event_search(char * user, int level, char **argv){
 
   if (event_parse(argv+1, &mask, tags)!=0) return -1;
 
-  ret = dbs.events->cursor(dbs.events, NULL, &curs, 0);
+  ret = dbs.events->cursor(dbs.d2ev, NULL, &curs, 0);
   if (ret!=0){
     fprintf(stderr, "Error: database error: %s \n", db_strerror(ret));
     return ret;
@@ -428,7 +427,7 @@ do_event_search(char * user, int level, char **argv){
       !strcasestr(ev.people, txt) &&
       !strcasestr(ev.route,  txt))) continue;
 
-    print_event(* (int*)key.data, &ev);
+    event_prn(* (int*)key.data, &ev);
   }
 
   if (curs != NULL) curs->close(curs);

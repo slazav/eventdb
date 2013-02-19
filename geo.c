@@ -22,12 +22,14 @@
 
 /* Geodata structure. In the database data is written after
    this structure, and pointers contain offsets from the beginning of
-   the structure. */
+   the structure.
+   Database key is event ID. */
 typedef struct {
   int mtime, ctime;
   int date1, date2;
   int length;
-  char * comm,
+  char * fname,
+       * comm,
        * auth,
        * owner;
   int ntags;  /* number of int tags */
@@ -51,7 +53,8 @@ geo2dbt(geo_t * obj){
 
   /* calculate data size and build data structure */
   val.size = sizeof(geo_t)   /* static fields + pointers */
-           + strlen(obj->comm) + 1 /* including \0*/
+           + strlen(obj->fname) + 1 /* including \0*/
+           + strlen(obj->comm) + 1
            + strlen(obj->auth) + 1
            + strlen(obj->owner) + 1
            + sizeof(int) * obj->ntags;
@@ -65,6 +68,10 @@ geo2dbt(geo_t * obj){
   *obj1 = *obj;
 
   ptr=sizeof(geo_t);
+  strcpy(val.data + ptr, obj->fname);
+    remove_html(val.data + ptr,  REMOVE_NL);
+    obj1->fname = NULL + ptr;
+    ptr += strlen(obj->fname) + 1;
   strcpy(val.data + ptr, obj->comm);
     remove_html(val.data + ptr,  REMOVE_NL);
     obj1->comm = NULL + ptr;
@@ -88,10 +95,11 @@ geo2dbt(geo_t * obj){
 
 /* Convert DBT structure to geo. Data is not copied! */
 geo_t
-dbt2geo(DBT * dbt){
+dbt2geo(const DBT * dbt){
   geo_t obj = * (geo_t *)dbt->data;
   /* Overwrite pointers to absolute values */
-  obj.comm  = (char *)dbt->data + ((void*)obj.comm - NULL); /* (char*) + (int)(void*-void*) */
+  obj.fname = (char *)dbt->data + ((void*)obj.fname - NULL); /* (char*) + (int)(void*-void*) */
+  obj.comm  = (char *)dbt->data + ((void*)obj.comm - NULL);
   obj.auth  = (char *)dbt->data + ((void*)obj.auth - NULL);
   obj.owner = (char *)dbt->data + ((void*)obj.owner - NULL);
   obj.tags   = (int *)(dbt->data + ((void*)obj.tags - NULL)); /* careful with types! */
@@ -100,14 +108,15 @@ dbt2geo(DBT * dbt){
 
 /* print data to stdout */
 void
-print_geo(char * fname, geo_t * obj){
+print_geo(int id, geo_t * obj){
   int i;
-  printf("<geo file=\"%s\">\n", fname);
+  printf("<geo event=\"%d\">\n", id);
   printf(" <ctime>%d</ctime>\n",   obj->ctime);
   printf(" <mtime>%d</mtime>\n",   obj->mtime);
   printf(" <date1>%d</date1>\n",   obj->date1);
   printf(" <date2>%d</date2>\n",   obj->date2);
   printf(" <length>%d</length>\n", obj->length);
+  printf(" <fname>%s</fname>\n",   obj->fname);
   printf(" <comm>%s</comm>\n",     obj->comm);
   printf(" <auth>%s</auth>\n",     obj->auth);
   printf(" <owner>%s</owner>\n",   obj->owner);
@@ -206,13 +215,14 @@ geo_parse(char **argv, geo_t * geo, int tags[MAX_TAGS]){
   char *stag, *prev;
   int i;
 
-  geo->comm  = argv[0];
-  geo->auth  = argv[1];
-  geo->date1 = get_int(argv[2], "date1");   if (geo->date1<0)  return -1;
-  geo->date2 = get_int(argv[3], "date2");   if (geo->date2<0)  return -1;
-  geo->length = get_int(argv[4], "length"); if (geo->length<0) return -1;
+  geo->fname  = argv[0];
+  geo->comm  = argv[1];
+  geo->auth  = argv[2];
+  geo->date1 = get_int(argv[3], "date1");   if (geo->date1<0)  return -1;
+  geo->date2 = get_int(argv[4], "date2");   if (geo->date2<0)  return -1;
+  geo->length = get_int(argv[5], "length"); if (geo->length<0) return -1;
 
-  stag = argv[5], i=0;
+  stag = argv[6], i=0;
   while (stag && (prev = strsep(&stag, ",:; \n\t"))){
     if (i>MAX_TAGS-1){
       fprintf(stderr, "Too many tags (> %d)\n", MAX_TAGS-1);

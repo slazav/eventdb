@@ -20,6 +20,7 @@ typedef struct {
  DB * users;
  DB * logs;
  DB * events;
+ DB * d2ev; /* secondary db to simplify date sorting */
  DB * links;
  DB * tracks;
 } dbs_t;

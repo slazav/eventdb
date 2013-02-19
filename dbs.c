@@ -25,10 +25,13 @@ const database_t databases[] = {
   {DBMASK_USERS,  &(dbs.users),  DEFAULT_HOMEDIR "/users",  NODUP, NULL},
   {DBMASK_LOGS,   &(dbs.logs),   DEFAULT_HOMEDIR "/logs",   NODUP, compare_uint},
   {DBMASK_EVENTS, &(dbs.events), DEFAULT_HOMEDIR "/events", NODUP, compare_uint},
+  {DBMASK_EVENTS, &(dbs.d2ev),   DEFAULT_HOMEDIR "/d2ev",   DUP, compare_uint},
   {DBMASK_LINKS,  &(dbs.links),  DEFAULT_HOMEDIR "/links",  DUP, compare_uint},
-  {DBMASK_TRACKS, &(dbs.tracks), DEFAULT_HOMEDIR "/tracks", NODUP, NULL},
+  {DBMASK_TRACKS, &(dbs.tracks), DEFAULT_HOMEDIR "/tracks", DUP, compare_uint},
   {0,NULL,NULL,0,NULL}
 };
+
+int db_event_date1(DB *secdb, const DBT *pkey, const DBT *pdata, DBT *skey);
 
 int
 databases_open(int flags){
@@ -85,14 +88,19 @@ databases_open(int flags){
           databases[i].file, db_strerror(ret));
       return(ret);
     }
+
   }
+  /* associate secondary dbs (maybe it is better to
+     put it to the main loop) */
+  dbs.d2ev->associate(dbs.events, NULL, dbs.d2ev, db_event_date1, 0);
 }
 
 int
 databases_close(){
   database_t *db;
   int i, ret, ret1=0;
-  for (i=0; databases[i].mask; i++){
+  for (i=0; databases[i].mask; i++)/* go to the end */;
+  for (i--; i>=0; i--){
     if (*databases[i].dbpp == NULL) continue;
     ret = (*databases[i].dbpp)->close(*databases[i].dbpp, 0);
     if (ret != 0)
