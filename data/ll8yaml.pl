@@ -7,16 +7,17 @@
 use strict;
 use YAML::Tiny;
 
-my $datadir="./old";
+my $indir="./old";
+my $outdir="./yml";
 
-opendir DATADIR, "$datadir"
-  or die "can't open $datadir dir: $!\n";
+opendir DATADIR, "$indir"
+  or die "can't open $indir dir: $!\n";
 
 while (my $f = readdir DATADIR){
-  next if ($f =~ /^\./) || -d "$datadir/$f";
+  next if ($f =~ /^\./) || -d "$indir/$f";
 
-  unless (open IN, "$datadir/$f"){
-    warn "skipping file $datadir/$f: $!\n";
+  unless (open IN, "$indir/$f"){
+    warn "skipping file $indir/$f: $!\n";
     next;
   };
 
@@ -56,8 +57,8 @@ while (my $f = readdir DATADIR){
   }
 
   close IN;
-  open OUT, "> $f.yml"
-    or die("Can't open file $f.yml: $!");
+  open OUT, "> $outdir/$f.yml"
+    or die("Can't open file $outdir/$f.yml: $!");
   print OUT YAML::Tiny::Dump(\%data)
     or die("Can't write yaml: $!");
   close OUT;

@@ -174,7 +174,8 @@ event_parse(char **argv, event_t * event, int tags[MAX_TAGS]){
       fprintf(stderr, "Too many tags (> %d)\n", MAX_TAGS-1);
       return -1;
     }
-    if (strlen(prev)){ tags[i] = atoi(prev);
+    if (strlen(prev)){
+      tags[i] = atoi(prev);
       if (tags[i]==0){
         fprintf(stderr, "Error: bad tag: %s\n", prev);
         return -1;
@@ -192,7 +193,7 @@ event_parse(char **argv, event_t * event, int tags[MAX_TAGS]){
   NOAUTH and NORM - owner only,
   MODER and higher - yes */
 int
-event_mperm_check(unsigned int id, char *user, int level){
+event_mperm_check(int id, char *user, int level){
   int ret;
   DBT key = mk_uint_dbt(&id);
   DBT val = mk_empty_dbt();
@@ -289,7 +290,7 @@ do_event_edit(char * user, int level, char **argv){
 
   /* get id from cmdline */
   id = get_uint(argv[0], "event id");
-  if (id == 0)  return -1;
+  if (id <= 0)  return -1;
 
   /* Check permissions */
   if (event_mperm_check(id, user, level)!=0) return -1;
@@ -308,13 +309,13 @@ do_event_edit(char * user, int level, char **argv){
 
 int
 do_event_delete(char * user, int level, char **argv){
-  unsigned int id;
+  int id;
   int ret;
   DBT key = mk_uint_dbt(&id);
 
   /* get id from cmdline */
   id = get_uint(argv[0], "event id");
-  if (id == 0)  return -1;
+  if (id <= 0)  return -1;
 
   /* Check permissions */
   if (event_mperm_check(id, user, level)!=0) return -1;
@@ -349,8 +350,9 @@ do_event_show(char * user, int level, char **argv){
 int
 do_event_list(char * user, int level, char **argv){
   DBC *curs;
-  DBT key = mk_empty_dbt();
-  DBT val = mk_empty_dbt();
+  DBT key  = mk_empty_dbt();
+  DBT pkey = mk_empty_dbt();
+  DBT pval  = mk_empty_dbt();
   event_t ev;
   int ret;
 
@@ -360,9 +362,9 @@ do_event_list(char * user, int level, char **argv){
     return ret;
   }
 
-  while ((ret = curs->get(curs, &key, &val, DB_PREV))==0){
-    ev = dbt2event(&val);
-    event_prn(* (int*)key.data, &ev);
+  while ((ret = curs->pget(curs, &key, &pkey, &pval, DB_PREV))==0){
+    ev = dbt2event(&pval);
+    event_prn(* (int*)pkey.data, &ev);
   }
 
   if (curs != NULL) curs->close(curs);
@@ -381,8 +383,9 @@ do_event_search(char * user, int level, char **argv){
   int tags[MAX_TAGS];
   event_t mask, ev;
   DBC *curs;
-  DBT key = mk_empty_dbt();
-  DBT val = mk_empty_dbt();
+  DBT key  = mk_empty_dbt();
+  DBT pkey = mk_empty_dbt();
+  DBT pval = mk_empty_dbt();
   char * txt = argv[0];
 
   if (event_parse(argv+1, &mask, tags)!=0) return -1;
@@ -397,8 +400,8 @@ do_event_search(char * user, int level, char **argv){
   d2 = (mask.date2 >= 0)?  mask.date2:~0;
   if (d2<d1) d2=d1;
 
-  while ((ret = curs->get(curs, &key, &val, DB_NEXT))==0){
-    ev = dbt2event(&val);
+  while ((ret = curs->pget(curs, &key, &pkey, &pval, DB_NEXT))==0){
+    ev = dbt2event(&pval);
     /* search by date range: */
     if (d1 && d1 > ev.date2) continue;
     if (d2 && d2 < ev.date1) continue;
@@ -427,7 +430,7 @@ do_event_search(char * user, int level, char **argv){
       !strcasestr(ev.people, txt) &&
       !strcasestr(ev.route,  txt))) continue;
 
-    event_prn(* (int*)key.data, &ev);
+    event_prn(* (int*)pkey.data, &ev);
   }
 
   if (curs != NULL) curs->close(curs);

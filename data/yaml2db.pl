@@ -3,11 +3,29 @@
 use strict;
 use YAML::Tiny;
 
+
 my $data = YAML::Tiny::LoadFile($ARGV[0])
   or die "Can't read $ARGV[0]: $!\n";
 
 my %tag_nums=(
-  pd => 1001,
+  D => 11, # группа Дмитриева
+  S => 12, # группа Сафронова
+
+  podm => 21, # Подмосковье
+  evr  => 22, # Европейская часть России
+  kavk => 23, # Кавказ
+  ural => 24, # Урал
+  sib  => 25, # Сибирь
+  zagr => 26, # Заграница
+
+  velo => 31, # вело
+  pesh => 32, # пешком
+  lyzh => 33, # лыжи
+  vodn => 34, # сплав
+
+  sor  => 41, # соревнования
+  '1day' => 42, # ПВД (1-2дня)
+  mday => 43, # многодневные походы
 );
 
 my $pwd='1234a';
@@ -20,7 +38,7 @@ foreach my $k (keys $data){
   my $route  = $data->{$k}->{route} || '';
   my $title  = $data->{$k}->{title} || '';
   my $date   = $data->{$k}->{date} || '';
-  my @tags   = $data->{$k}->{tags} || [];
+  my $tags   = $data->{$k}->{tags} || '';
 
   my ($y1, $m1, $d1, $y2, $m2, $d2) =(0,0,0,0,0,0);
   if ($date =~ /^(\d{4})[\.\/](\d{2})[\.\/](\d{2})/){($y1,$m1,$d1)=($1,$2,$3);}
@@ -30,14 +48,15 @@ foreach my $k (keys $data){
   if ($date =~ /-(\d{4})[\.\/](\d{2})[\.\/](\d{2})/){($y2,$m2,$d2)=($1,$2,$3);}
   elsif ($date =~ /-(\d{2})[\.\/](\d{2})/){($m2,$d2)=($1,$2);}
   elsif ($date =~ /-(\d{2})/){$d2=$1;}
-
   $y2=$y1 if $y2==0;
   $m2=$m1 if $m2==0;
   $d2=$d1 if $d2==0;
-
   my $D1="$y1$m1$d1";
   my $D2="$y2$m2$d2";
-  my $tags='123,456';
+
+  my @t1;
+  foreach (@{$tags}){ push (@t1, $tag_nums{$_}) if exists $tag_nums{$_};}
+  $tags = join ',', @t1;
 
   open IN, "../eventdb '$owner' '' event_create " .
            "'$title' '$body' '$people' '$route' " .
@@ -45,6 +64,6 @@ foreach my $k (keys $data){
   my $ret = <IN>;
   chomp($ret);
 
-  print "$k -> $owner -> $ret\n";
+  print "$k -> $owner -> $tags\n";
   
 }
