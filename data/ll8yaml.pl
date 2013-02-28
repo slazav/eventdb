@@ -8,7 +8,41 @@ use strict;
 use YAML::Tiny;
 
 my $indir="./old";
-my $outdir="./yml";
+
+my %data;
+
+my %tag_nums=(
+  D => 11, # группа Дмитриева
+  S => 12, # группа Сафронова
+
+  podm => 21, # Подмосковье
+  evr  => 22, # Европейская часть России
+  kavk => 23, # Кавказ
+  ural => 24, # Урал
+  sib  => 25, # Сибирь
+  zagr => 26, # Заграница
+
+  velo => 31, # вело
+  pesh => 32, # пешком
+  lyzh => 33, # лыжи
+  vodn => 34, # сплав
+
+  sor  => 41, # соревнования
+  '1day' => 42, # ПВД (1-2дня)
+  mday => 43, # многодневные походы
+);
+
+sub decode_date{
+  my $in=shift;
+  if ($in =~ m|^(\d{4})$|) {return "${1}0000", "${1}0000";}
+  if ($in =~ m|^(\d{4})/(\d{2})$|) {return "${1}${2}00", "${1}${2}00";}
+  if ($in =~ m|^(\d{4})/(\d{2})/(\d{2})$|) {return "${1}${2}${3}", "${1}${2}${3}";}
+  if ($in =~ m|^(\d{4})/(\d{2})/(\d{2})-(\d{2})$|) {return "${1}${2}${3}", "${1}${2}${4}";}
+  if ($in =~ m|^(\d{4})/(\d{2})/(\d{2})-(\d{2})/(\d{2})$|) {return "${1}${2}${3}", "${1}${4}${5}";}
+  if ($in =~ m|^(\d{4})/(\d{2})/(\d{2})-(\d{4})/(\d{2})/(\d{2})$|) {return "${1}${2}${3}", "${4}${5}${6}";}
+  print STDOUT "WARNING: wrong date: $in";
+  return 0, 0;
+}
 
 opendir DATADIR, "$indir"
   or die "can't open $indir dir: $!\n";
@@ -21,11 +55,10 @@ while (my $f = readdir DATADIR){
     next;
   };
 
-  print "processing $f\n";
+  print STDERR "processing $f\n";
 
   my $read=0;
   my %entry;
-  my %data;
   my $id;
 
   foreach (<IN>){
@@ -34,15 +67,22 @@ while (my $f = readdir DATADIR){
         $read=1;
         %entry=();
         $id=$1;
-        $entry{cuser} = $2;
-        $entry{ctime} = $3;
+        $entry{owner} = $2;
+        $entry{ctime} = `date -d "$3" +%s`;
+        $entry{mtime} = time;
+        chomp $entry{ctime};
         next;
       }
     }
     if ($read==1){
       if (/^title:\s+(.*)/){ $entry{title} = $1; next; }
-      if (/^date:\s+(.*)/){  $entry{date} = $1; next; }
-      if (/^tags:\s+(.*)/){  push @{$entry{tags}}, split /\s+/, $1; next; }
+      if (/^date:\s+(.*)/){  ($entry{date1},$entry{date2}) = decode_date($1); next; }
+      if (/^tags:\s+(.*)/){
+         my @tags = split /\s+/, $1;
+         $_ = $tag_nums{$_} || '' foreach (@tags);
+         $entry{tags} = join ',', @tags;
+         next;
+      }
       if (/^> (.*)$/){
          if (!$entry{body}){ $entry{body} = $1;}
          else {$entry{body}.="\n".$1;}
@@ -56,12 +96,7 @@ while (my $f = readdir DATADIR){
     }
   }
 
-  close IN;
-  open OUT, "> $outdir/$f.yml"
-    or die("Can't open file $outdir/$f.yml: $!");
-  print OUT YAML::Tiny::Dump(\%data)
-    or die("Can't write yaml: $!");
-  close OUT;
+  print YAML::Tiny::Dump(\%data)
 
 }
 
