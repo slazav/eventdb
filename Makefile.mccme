@@ -3,7 +3,7 @@ LDFLAGS=-L/usr/local/lib/db46
 CFLAGS=-DMCCME=1 -I/usr/local/include/db46
 
 
-OBJ=dbs.o user.o event.o log.o actions.o eventdb.o
+OBJ=dbs.o user.o event.o link.o geo.o log.o actions.o eventdb.o
 
 eventdb: ${OBJ}
 	${CC} ${LDFLAGS} ${OBJ} ${LDLIBS} -o $@

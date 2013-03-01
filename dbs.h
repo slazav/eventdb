@@ -22,6 +22,7 @@ typedef struct {
  DB * events;
  DB * d2ev; /* secondary db to simplify date sorting */
  DB * links;
+ DB * e2ln; /* secondary db for event->link index */
  DB * tracks;
 } dbs_t;
 

@@ -18,6 +18,7 @@ int
 get_int(const char *str, const char *name){
   int ret;
   if (strlen(str)==0) return 0;
+  if (strlen(str)==1 && str[0]==0) return 0;
   ret=atoi(str);
   if (ret<=0){
     fprintf(stderr, "Error: bad %s: %s\n", name, str);
@@ -26,12 +27,29 @@ get_int(const char *str, const char *name){
   return ret;
 }
 
-unsigned int
-get_uint(const char *str, const char *name){
-  int ret;
-  ret=atoi(str);
-  if (ret==0)
-    fprintf(stderr, "Error: bad %s: %s\n", name, str);
-  return ret;
-}
+int
+get_tags(char *str, int tags[MAX_TAGS]){
+  char *stag, *prev;
+  int i = 0;
+  stag = str;
 
+  if (tags == NULL){
+    fprintf(stderr, "Error: bad tag memory\n");
+    return -1;
+  }
+  while (stag && (prev = strsep(&stag, ",:; \n\t"))){
+    if (i>MAX_TAGS-1){
+      fprintf(stderr, "Too many tags (> %d)\n", MAX_TAGS-1);
+      return -1;
+    }
+    if (strlen(prev)){
+      tags[i] = atoi(prev);
+      if (tags[i]==0){
+        fprintf(stderr, "Error: bad tag: %s\n", prev);
+        return -1;
+      }
+    }
+    i++;
+  }
+  return i;
+}

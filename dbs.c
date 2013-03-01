@@ -25,13 +25,15 @@ const database_t databases[] = {
   {DBMASK_USERS,  &(dbs.users),  DEFAULT_HOMEDIR "/users",  NODUP, NULL},
   {DBMASK_LOGS,   &(dbs.logs),   DEFAULT_HOMEDIR "/logs",   NODUP, compare_uint},
   {DBMASK_EVENTS, &(dbs.events), DEFAULT_HOMEDIR "/events", NODUP, compare_uint},
-  {DBMASK_EVENTS, &(dbs.d2ev),   DEFAULT_HOMEDIR "/d2ev",   DUP, compare_uint},
-  {DBMASK_LINKS,  &(dbs.links),  DEFAULT_HOMEDIR "/links",  DUP, compare_uint},
-  {DBMASK_TRACKS, &(dbs.tracks), DEFAULT_HOMEDIR "/tracks", DUP, compare_uint},
+  {DBMASK_EVENTS, &(dbs.d2ev),   DEFAULT_HOMEDIR "/d2ev",   DUP,   compare_uint},
+  {DBMASK_LINKS,  &(dbs.links),  DEFAULT_HOMEDIR "/links",  NODUP, compare_uint},
+  {DBMASK_LINKS,  &(dbs.e2ln),   DEFAULT_HOMEDIR "/e2ln",   DUP,   compare_uint},
+  {DBMASK_TRACKS, &(dbs.tracks), DEFAULT_HOMEDIR "/tracks", DUP,   compare_uint},
   {0,NULL,NULL,0,NULL}
 };
 
 int db_event_date1(DB *secdb, const DBT *pkey, const DBT *pdata, DBT *skey);
+int db_link_eventid(DB *secdb, const DBT *pkey, const DBT *pdata, DBT *skey);
 
 int
 databases_open(int flags){
@@ -93,6 +95,7 @@ databases_open(int flags){
   /* associate secondary dbs (maybe it is better to
      put it to the main loop) */
   dbs.d2ev->associate(dbs.events, NULL, dbs.d2ev, db_event_date1, 0);
+  dbs.e2ln->associate(dbs.links,  NULL, dbs.e2ln, db_link_eventid, 0);
 }
 
 int

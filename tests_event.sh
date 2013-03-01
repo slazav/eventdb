@@ -2,6 +2,7 @@
 
 mkdir -p -- ./dbs
 rm -f -- ./dbs/events
+rm -f -- ./dbs/d2ev
 . test_lib.sh
 
 echo "======== Events ========"
@@ -21,11 +22,13 @@ check 0 "new event by sla" "sla" "1234" event_create\
 check 0 "print event" "" "" event_show "1"
 
 check 1 "edit: no event" "sla" "1234" event_edit 3\
-  "title\ntitle1e" "<body1_n> body2" "people" "route" "20121201" "20121205" "1231,222"
+  "title\ntitle1e" "<body1_n>
+body2" "people" "route" "20121201" "20121205" "1231,222"
 check 0 "edit event by sla" "sla" "1234" event_edit 1\
-  "title\ntitle1e" "<body1_n> body2" "people" "route" "20121201" "20121205" "1231,222"
+  "title\ntitle1e" "<body1_n>
+body2" "people" "route" "20121201" "20121205" "1231,222"
 check 0 "print event" "" "" event_show "1"
-
+check 0 "list event" "" "" event_list
 check 1 "del event 3" "sla" "1234" event_delete "3"
 check 1 "del event 2 - perm" "" "" event_delete "2"
 check 0 "del event 2" "sla" "1234" event_delete "2"
