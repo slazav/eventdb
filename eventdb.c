@@ -62,6 +62,8 @@ const action_t actions[] = {
      "Add new link, print its id"},
   {"link_delete",   &do_link_delete,   ACT_RW, 1,
      "<id>", "Delete link"},
+  {"link_replace",   &do_link_replace, ACT_RW, 1,
+     "<id>", "Replace local file"},
   {"link_show", &do_link_show, ACT_RO, 1,
      "<id>", "Print link data"},
   {"link_list_ev", &do_link_list_ev, ACT_RO, 1,

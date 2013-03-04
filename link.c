@@ -227,6 +227,7 @@ link_mperm_check(int id, char *user, int level){
   if (event_get(ll.eventid, &ev)!=0) return -1;
   if (strcmp(user, ev.owner)==0) return 0;
 
+fprintf(stderr, ">>> %s %s %s\n", user, ll.owner, ev.owner);
   fprintf(stderr, "Error: %s is not allowed to modify data\n", user);
   return -1;
 }
