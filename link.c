@@ -1,7 +1,8 @@
 #include "actions.h"
 #include "event.h"
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 
 /* folder for local files*/
 #ifdef MCCME
@@ -25,7 +26,7 @@
 typedef struct {
   int ctime, mtime;
   int eventid;
-  int local;
+  int local; /* 0 or 1 -- is local file stored?*/
   char * url,
        * text,
        * auth,
@@ -227,7 +228,6 @@ link_mperm_check(int id, char *user, int level){
   if (event_get(ll.eventid, &ev)!=0) return -1;
   if (strcmp(user, ev.owner)==0) return 0;
 
-fprintf(stderr, ">>> %s %s %s\n", user, ll.owner, ev.owner);
   fprintf(stderr, "Error: %s is not allowed to modify data\n", user);
   return -1;
 }
@@ -290,16 +290,18 @@ check_fname(const char * fname){
 }
 
 /* Build absolute filename (check_fname included)*/
+/* You need to free path manually after use! */
 char *
 build_path(const char *fname){
-  static char path[PATHLEN];
+  char *path;
   int l1, l2;
 
   if (check_fname(fname)!=0) return NULL;
   l1 = strlen(LOCAL_FDIR);
   l2 = strlen(fname);
-  if (l1 + l2 + 2 > PATHLEN){
-    fprintf(stderr, "Error: filename buffer is too short\n");
+  path = (char *)malloc(l1 + l2 + 2);
+  if (path==NULL){
+    fprintf(stderr, "Error: can't allocate memory\n");
     return NULL;
   }
   strcpy(path, LOCAL_FDIR);
@@ -315,13 +317,14 @@ file_put(char * fname, int overwrite){
   FILE *F;
   int count;
 
-  path=build_path(fname);
+  path=build_path(fname); /* Do free after use! */
   if (path==NULL) return -1;
 
   /* create file (error if file exists in non-overwrite mode) */
   F = fopen(path, overwrite? "w":"wx");
   if (F == NULL){
     perror("Error");
+    free(path);
     return -1;
   }
   /* copy stdin to the file */
@@ -337,9 +340,12 @@ file_put(char * fname, int overwrite){
       fclose(F);
       fprintf(stderr, "Error: file too large (> %d bytes)\n", LOCAL_MAX_FSIZE);
       if (unlink(path)!=0) perror("Error");
+      free(path);
       return -1;
     }
   }
+  free(path);
+
   if (ferror(stdin) || ferror(F)){
     perror("Error");
     return -1;
@@ -407,6 +413,30 @@ do_link_edit(char * user, int level, char **argv){
   obj.owner = oobj.owner;
   obj.tags  = tags;
   if (link_parse(argv+1, &obj)!=0) return -1;
+  obj.local = oobj.local; /* can't change local flag! */
+
+  /* move file if needed */
+  if (oobj.local && strcmp(oobj.url,obj.url)!=0){
+    char *path, *opath;
+    struct stat stat_buf;
+    int ret;
+    path = build_path(obj.url); /* Do free after use */
+    if (path==NULL) return -1;
+    opath = build_path(oobj.url); /* Do free after use */
+    if (opath==NULL) {free(path); return -1;}
+    /* prevent from overwriting */
+    if (stat(path, &stat_buf)==0){
+      fprintf(stderr, "Error: file exists: %s\n", path);
+      free(path); free(opath);
+      return -1;
+    }
+    if (rename(opath, path)!=0){
+      perror("Error");
+      free(path); free(opath);
+      return -1;
+    }
+    free(path); free(opath);
+  }
 
   return link_put(id, &obj, 0);
 }
@@ -418,7 +448,6 @@ do_link_delete(char * user, int level, char **argv){
   int ret;
   link_t oobj;
   DBT key = mk_uint_dbt(&id);
-  char *path;
 
   /* get id from cmdline */
   id = get_int(argv[0], "link id");
@@ -432,12 +461,14 @@ do_link_delete(char * user, int level, char **argv){
 
   /* delete local file if needed*/
   if (oobj.local){
-    path=build_path(oobj.url);
+    char * path=build_path(oobj.url); /* free after use! */
     if (path==NULL) return -1;
     if (unlink(path)!=0){
       perror("Error");
+      free(path);
       return -1;
     }
+    free(path);
   }
 
   /* delete link */
