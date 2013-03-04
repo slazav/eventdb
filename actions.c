@@ -18,7 +18,7 @@ int
 get_int(const char *str, const char *name){
   int ret;
   if (strlen(str)==0) return 0;
-  if (strlen(str)==1 && str[0]==0) return 0;
+  if (strlen(str)==1 && str[0]=='0') return 0;
   ret=atoi(str);
   if (ret<=0){
     fprintf(stderr, "Error: bad %s: %s\n", name, str);
@@ -45,7 +45,7 @@ get_tags(char *str, int tags[MAX_TAGS]){
     if (strlen(prev)){
       tags[i] = atoi(prev);
       if (tags[i]==0){
-        fprintf(stderr, "Error: bad tag: %s\n", prev);
+        fprintf(stderr, "Error: bad tags: %s\n", str);
         return -1;
       }
     }

@@ -2,7 +2,6 @@
 
 # преобразование из старого формата в новый
 # (yaml, отдельные записи для треков)
-# более радикальное преобразование см.в ll9
 
 use strict;
 use YAML::Tiny;
@@ -34,14 +33,37 @@ my %tag_nums=(
 
 sub decode_date{
   my $in=shift;
-  if ($in =~ m|^(\d{4})$|) {return "${1}0000", "${1}0000";}
-  if ($in =~ m|^(\d{4})/(\d{2})$|) {return "${1}${2}00", "${1}${2}00";}
-  if ($in =~ m|^(\d{4})/(\d{2})/(\d{2})$|) {return "${1}${2}${3}", "${1}${2}${3}";}
-  if ($in =~ m|^(\d{4})/(\d{2})/(\d{2})-(\d{2})$|) {return "${1}${2}${3}", "${1}${2}${4}";}
-  if ($in =~ m|^(\d{4})/(\d{2})/(\d{2})-(\d{2})/(\d{2})$|) {return "${1}${2}${3}", "${1}${4}${5}";}
-  if ($in =~ m|^(\d{4})/(\d{2})/(\d{2})-(\d{4})/(\d{2})/(\d{2})$|) {return "${1}${2}${3}", "${4}${5}${6}";}
-  print STDOUT "WARNING: wrong date: $in";
+  my $y = '(\d{4})';
+  my $m = '(\d{1,2})';
+  my $ymm = "$y/$m/$m";
+  if ($in =~ m|^$y\s*$|) {return "${1}0000", "${1}0000";}
+  if ($in =~ m|^$y/$m\s*$|) {return "${1}${2}00", "${1}${2}00";}
+  if ($in =~ m|^$ymm\s*$|) {return "${1}${2}${3}", "${1}${2}${3}";}
+  if ($in =~ m|^$ymm\s*-\s*$m\s*$|) {return "${1}${2}${3}", "${1}${2}${4}";}
+  if ($in =~ m|^$ymm\s*-\s*$m/$m\s*$|) {return "${1}${2}${3}", "${1}${4}${5}";}
+  if ($in =~ m|^$ymm\s*-\s*$ymm\s*$|) {return "${1}${2}${3}", "${4}${5}${6}";}
+  if ($in =~ m|^$y/$m\s*-\s*$y/$m\s*$|) {return "${1}${2}00", "${3}${4}00";}
+  print STDERR "WARNING: wrong date: <<$in>>\n";
   return 0, 0;
+}
+
+sub decode_links{
+  my @links;
+  while ($_[0]=~s/геоданные:\s*\(\((\S+)\s+(.*?)\)\)//s){
+    push @links, {url=>$1, text=>"геоданные: $2", tags=>2};
+  }
+  while ($_[0]=~s/\(\((\S+)\s+(.*?)\)\)//s){
+    my $tags='';
+    $tags=1 if ($2 && $2=~/фото/i);
+    $tags=2 if ($2 && $2=~/гео/i);
+    push @links, {url=>$1, text=>$2, tags=>$tags};
+  }
+  return [@links];
+}
+
+sub cleanup_body{
+  $_[0]=~s/(\s)\s+/$1/sg;
+  $_[0]=~s/\s+$//;
 }
 
 opendir DATADIR, "$indir"
@@ -90,6 +112,10 @@ while (my $f = readdir DATADIR){
       }
 
       if (/<!-- \/entry -->/){
+        if ($entry{body}){
+          $entry{links} = decode_links $entry{body};
+          cleanup_body $entry{body};
+        }
         $data{$id} = {%entry};
         $read=0; next;
       }

@@ -3,6 +3,21 @@
 #include "string.h"
 #include "stdlib.h"
 
+/* folder for local files*/
+#ifdef MCCME
+#define LOCAL_FDIR "/home/slazav/CH/gps"
+#else
+#define LOCAL_FDIR "./gps"
+#endif
+
+/* limits: local filename size, file size */
+#define LOCAL_MAX_FNAME 32
+#define LOCAL_MAX_FSIZE 100000
+
+/* io buffer */
+#define BUFLEN 8192
+#define PATHLEN 1024
+
 /*********************************************************************/
 /* Link structure. In the database data is written after
    this structure, and pointers contain offsets from the beginning of
@@ -10,8 +25,10 @@
 typedef struct {
   int ctime, mtime;
   int eventid;
+  int local;
   char * url,
        * text,
+       * auth,
        * owner;
   int ntags;  /* number of int tags */
   int * tags;
@@ -32,6 +49,7 @@ link2dbt(link_t * link){
   val.size = sizeof(link_t)   /* static fields + pointers */
            + strlen(link->url) + 1 /* including \0*/
            + strlen(link->text) + 1
+           + strlen(link->auth) + 1
            + strlen(link->owner) + 1
            + sizeof(int) * link->ntags;
   val.data = malloc(val.size);
@@ -52,6 +70,10 @@ link2dbt(link_t * link){
     remove_html(val.data + ptr,  REMOVE_NL);
     obj->text = NULL + ptr;
     ptr += strlen(link->text) + 1;
+  strcpy(val.data + ptr, link->auth);
+    remove_html(val.data + ptr,  REMOVE_NL);
+    obj->auth = NULL + ptr;
+    ptr += strlen(link->auth) + 1;
   strcpy(val.data + ptr, link->owner);
     remove_html(val.data + ptr,  REMOVE_NL);
     obj->owner = NULL + ptr;
@@ -72,6 +94,7 @@ dbt2link(const DBT * dbt){
   /* Overwrite pointers to absolute values */
   obj.url   = (char *)dbt->data + ((void*)obj.url   - NULL); /* (char*) + (int)(void*-void*) */
   obj.text  = (char *)dbt->data + ((void*)obj.text  - NULL);
+  obj.auth  = (char *)dbt->data + ((void*)obj.auth  - NULL);
   obj.owner = (char *)dbt->data + ((void*)obj.owner - NULL);
   obj.tags  = (int *)(dbt->data + ((void*)obj.tags  - NULL)); /* careful with types!*/
   return obj;
@@ -93,17 +116,19 @@ db_link_eventid(DB *secdb, const DBT *pkey, const DBT *pdata, DBT *skey){
 void
 link_prn(int id, link_t * obj){
   int i;
-  printf("<link id=%d>\n", id);
-  printf(" <ctime>%d</ctime>\n",     obj->ctime);
-  printf(" <mtime>%d</mtime>\n",     obj->mtime);
-  printf(" <eventid>%d</eventid>\n", obj->eventid);
-  printf(" <url>%s</url>\n",         obj->url);
-  printf(" <text>%s</text>\n",       obj->text);
-  printf(" <owner>%s</owner>\n",     obj->owner);
-  printf(" <tags>");
+  printf(" <link id=%d>\n", id);
+  printf("  <ctime>%d</ctime>\n",     obj->ctime);
+  printf("  <mtime>%d</mtime>\n",     obj->mtime);
+  printf("  <eventid>%d</eventid>\n", obj->eventid);
+  printf("  <local>%d</local>\n",     obj->local);
+  printf("  <url>%s</url>\n",         obj->url);
+  printf("  <text>%s</text>\n",       obj->text);
+  printf("  <auth>%s</auth>\n",       obj->auth);
+  printf("  <owner>%s</owner>\n",     obj->owner);
+  printf("  <tags>");
   for (i=0; i<obj->ntags; i++) printf("%s%d", i==0?"":",", obj->tags[i]);
   printf("</tags>\n");
-  printf("</link>\n");
+  printf(" </link>\n");
 }
 
 /* Get last link id in the database. */
@@ -139,7 +164,9 @@ int
 link_parse(char **argv, link_t * link){
   link->url   = argv[0];
   link->text  = argv[1];
-  if ((link->ntags=get_tags(argv[2], link->tags)) <0) return -1;
+  link->auth  = argv[2];
+  link->local = get_int(argv[3], "local flag"); if (link->local<0) return -1;
+  if ((link->ntags=get_tags(argv[4], link->tags)) <0) return -1;
   return 0;
 }
 
@@ -204,6 +231,122 @@ link_mperm_check(int id, char *user, int level){
   return -1;
 }
 
+/* print links for one event */
+int
+list_event_links(int eventid){
+  DBC *curs;
+  DBT key  = mk_uint_dbt(&eventid);
+  DBT pkey = mk_empty_dbt();
+  DBT pval = mk_empty_dbt();
+  link_t obj;
+  int ret;
+
+  ret = dbs.links->cursor(dbs.e2ln, NULL, &curs, 0);
+  if (ret!=0){
+    fprintf(stderr, "Error: database error: %s \n", db_strerror(ret));
+    return ret;
+  }
+
+  ret = curs->pget(curs, &key, &pkey, &pval, DB_SET);
+  while (ret==0){
+    obj = dbt2link(&pval);
+    link_prn(* (int*)pkey.data, &obj);
+    ret = curs->pget(curs, &key, &pkey, &pval, DB_NEXT_DUP);
+  }
+
+  if (curs != NULL) curs->close(curs);
+
+  if (ret!=DB_NOTFOUND){
+    fprintf(stderr, "Error: database error: %s \n", db_strerror(ret));
+    return ret;
+  }
+  return 0;
+}
+
+/*********************************************************************/
+/* Operations with local files */
+
+int
+check_fname(const char * fname){
+  const char accept[] =
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "0123456789-_.";
+  int i, n=strlen(fname);
+  if (n<1){
+    fprintf(stderr, "Error: empty name\n");
+    return -1;
+  }
+  if (n>LOCAL_MAX_FNAME){
+    fprintf(stderr, "Error: too long name (>%d chars)\n", LOCAL_MAX_FNAME);
+    return -1;
+  }
+  if (strspn(fname, accept)!=n){
+    fprintf(stderr, "Error: only a-z,A-Z,0-9, . and _ characters are accepted\n");
+    return -1;
+  }
+  return 0;
+}
+
+/* Build absolute filename (check_fname included)*/
+char *
+build_path(const char *fname){
+  static char path[PATHLEN];
+  int l1, l2;
+
+  if (check_fname(fname)!=0) return NULL;
+  l1 = strlen(LOCAL_FDIR);
+  l2 = strlen(fname);
+  if (l1 + l2 + 2 > PATHLEN){
+    fprintf(stderr, "Error: filename buffer is too short\n");
+    return NULL;
+  }
+  strcpy(path, LOCAL_FDIR);
+  path[l1] = '/';
+  strcpy(path+l1+1, fname);
+  return path;
+}
+
+/* store file */
+int
+file_put(char * fname, int overwrite){
+  char *path, buf[BUFLEN];
+  FILE *F;
+  int count;
+
+  path=build_path(fname);
+  if (path==NULL) return -1;
+
+  /* create file (error if file exists in non-overwrite mode) */
+  F = fopen(path, overwrite? "w":"wx");
+  if (F == NULL){
+    perror("Error");
+    return -1;
+  }
+  /* copy stdin to the file */
+  count=0;
+  while (!feof(stdin)){
+    int i;
+    i = fread(buf, 1, sizeof(buf), stdin);
+    if (i==0) break;
+    i = fwrite(buf, 1, i, F);
+    if (i==0) break;
+    count +=i;
+    if (count > LOCAL_MAX_FSIZE){
+      fclose(F);
+      fprintf(stderr, "Error: file too large (> %d bytes)\n", LOCAL_MAX_FSIZE);
+      if (unlink(path)!=0) perror("Error");
+      return -1;
+    }
+  }
+  if (ferror(stdin) || ferror(F)){
+    perror("Error");
+    return -1;
+  }
+  fclose(F);
+  return 0;
+}
+
 /*********************************************************************/
 /* Actions */
 int
@@ -232,6 +375,10 @@ do_link_create(char * user, int level, char **argv){
   obj.tags  = tags;
   if (link_parse(argv+1, &obj)!=0) return -1;
 
+  /* put file */
+  if (obj.local && file_put(obj.url, 0)!=0) return -1;
+
+  /* write metadata */
   if (link_put(id, &obj, DB_NOOVERWRITE)!=0) return -1;
   printf("%d\n", id);
   return 0;
@@ -268,7 +415,9 @@ int
 do_link_delete(char * user, int level, char **argv){
   int id;
   int ret;
+  link_t oobj;
   DBT key = mk_uint_dbt(&id);
+  char *path;
 
   /* get id from cmdline */
   id = get_int(argv[0], "link id");
@@ -277,18 +426,56 @@ do_link_delete(char * user, int level, char **argv){
   /* Check permissions */
   if (link_mperm_check(id, user, level)!=0) return -1;
 
+  /* get old link */
+  if (link_get(id, &oobj)!=0) return -1;
+
+  /* delete local file if needed*/
+  if (oobj.local){
+    path=build_path(oobj.url);
+    if (path==NULL) return -1;
+    if (unlink(path)!=0){
+      perror("Error");
+      return -1;
+    }
+  }
+
   /* delete link */
   ret = dbs.links->del(dbs.links, NULL, &key, 0);
   if (ret==DB_NOTFOUND){
-    fprintf(stderr, "Error: link not found: %d \n", id);
+    fprintf(stderr, "Error: link not found: %d\n", id);
     return ret;
   }
   else if (ret!=0){
     fprintf(stderr, "Error: database error: %s\n", db_strerror(ret));
     return ret;
   }
+
   return ret;
 }
+
+int
+do_link_replace(char * user, int level, char **argv){
+  int id;
+  link_t oobj;
+
+  /* get id from cmdline */
+  id = get_int(argv[0], "link id");
+  if (id <= 0)  return -1;
+
+  /* Check permissions */
+  if (link_mperm_check(id, user, level)!=0) return -1;
+
+  /* get link data */
+  if (link_get(id, &oobj)!=0) return -1;
+
+  if (!oobj.local){
+    fprintf(stderr, "Error: non-local file.\n");
+    return -1;
+  }
+
+  return file_put(oobj.url, 1);
+}
+
 
 int
 do_link_show(char * user, int level, char **argv){
@@ -304,42 +491,13 @@ do_link_show(char * user, int level, char **argv){
   return 0;
 }
 
+
 int
 do_link_list_ev(char * user, int level, char **argv){
-  DBC *curs;
-  int id;
-  DBT key  = mk_uint_dbt(&id);
-  DBT pkey = mk_empty_dbt();
-  DBT pval = mk_empty_dbt();
-  link_t obj;
-  int ret;
-
-  /* get event id from cmdline */
-  id = get_int(argv[0], "link id");
+  int id = get_int(argv[0], "link id");
   if (id <= 0)  return -1;
-
-  ret = dbs.links->cursor(dbs.e2ln, NULL, &curs, 0);
-  if (ret!=0){
-    fprintf(stderr, "Error: database error: %s \n", db_strerror(ret));
-    return ret;
-  }
-
-  ret = curs->pget(curs, &key, &pkey, &pval, DB_SET);
-  while (ret==0){
-    obj = dbt2link(&pval);
-    link_prn(* (int*)pkey.data, &obj);
-    ret = curs->pget(curs, &key, &pkey, &pval, DB_NEXT_DUP);
-  }
-
-  if (curs != NULL) curs->close(curs);
-
-  if (ret!=DB_NOTFOUND){
-    fprintf(stderr, "Error: database error: %s \n", db_strerror(ret));
-    return ret;
-  }
-  return 0;
+  return list_event_links(id);
 }
-
 
 int
 do_link_list(char * user, int level, char **argv){
@@ -404,6 +562,7 @@ do_link_search(char * user, int level, char **argv){
     /* search in text fields: */
     if (strlen(mask.url)  && !strcasestr(obj.url,  mask.url))  continue;
     if (strlen(mask.text) && !strcasestr(obj.text, mask.text)) continue;
+    if (strlen(mask.auth) && !strcasestr(obj.auth, mask.auth)) continue;
 
     link_prn(* (int*)key.data, &obj);
   }

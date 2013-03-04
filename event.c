@@ -107,6 +107,7 @@ event_prn(int id, event_t * ev){
   printf(" <tags>");
   for (i=0; i<ev->ntags; i++) printf("%s%d", i==0?"":",", ev->tags[i]);
   printf("</tags>\n");
+  list_event_links(id);
   printf("</event>\n");
 }
 

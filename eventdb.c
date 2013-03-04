@@ -54,11 +54,11 @@ const action_t actions[] = {
      "<text> <title> <body> <people> <route> <date1> <date2> <tags>",
      "Find events: use <text> for full text search or special event fields"},
 
-  {"link_create",   &do_link_create,   ACT_RW, 4,
-     "<eventid> <url> <text> <tags>",
+  {"link_create",   &do_link_create,   ACT_RW, 6,
+     "<eventid> <url> <text> <auth> <local 0|1> <tags>",
      "Add new link, print its id"},
-  {"link_edit",   &do_link_edit,   ACT_RW, 4,
-     "<id> <url> <text> <tags>",
+  {"link_edit",   &do_link_edit,   ACT_RW, 6,
+     "<id> <url> <text> <auth> <local 0|1> <tags>",
      "Add new link, print its id"},
   {"link_delete",   &do_link_delete,   ACT_RW, 1,
      "<id>", "Delete link"},
@@ -68,8 +68,8 @@ const action_t actions[] = {
      "<event id>", "Show links for the event"},
   {"link_list", &do_link_list, ACT_RO, 0,
      "", "List all links"},
-  {"link_search",&do_link_search,ACT_RO, 8,
-     "<url> <text> <tags>",
+  {"link_search",&do_link_search,ACT_RO, 5,
+     "<url> <text> <auth> <local> <tags>",
      "Find links"},
 
 
@@ -80,23 +80,6 @@ const action_t actions[] = {
      "<id>", "Print log entry"},
   {"log_tsearch", &do_log_tsearch, ACT_RO, 2,
      "<t1> <t2>", "Print all log entries between t1 and t2. Use \"\" for now"},
-
-  {"geo_create",   &do_geo_create,   ACT_RW, 7,
-     "<fname> <comm> <auth> <date1> <date2> <length> <tags>",
-     "Add new geodata file"},
-  {"geo_edit",     &do_geo_edit,     ACT_RW, 7,
-     "<fname> <comm> <auth> <date1> <date2> <length> <tags>",
-     "Edit geodata information"},
-  {"geo_delete",   &do_geo_delete,   ACT_RW, 1,
-     "<fname>",
-     "Delete geodata"},
-  {"geo_replace",   &do_geo_replace,   ACT_RW, 1,
-     "<fname>",
-     "Delete geodata"},
-  {"geo_show", &do_geo_show, ACT_RO, 1,
-     "<fname>", "Print geo data"},
-  {"geo_list", &do_geo_list, ACT_RO, 0,
-     "<fname>", "Print all geo data"},
 
   {NULL, NULL, 0, 0, NULL, NULL}};
 

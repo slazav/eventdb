@@ -43,5 +43,5 @@ foreach(<IN>){
   elsif (m|</event>|){ $data{events} -> {$id} = {%ev}; }
   else {die "Error in event parsing!\n"; }
 }
-
+close IN;
 print YAML::Tiny::Dump(\%data)
