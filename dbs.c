@@ -135,7 +135,7 @@ DBT mk_uint_dbt(unsigned int * i){
 DBT mk_string_dbt(const char * str){
   DBT ret;
   memset(&ret, 0, sizeof(DBT));
-  ret.data = str;
+  ret.data = (char *) str;
   ret.size = strlen(str)+1;
   return ret;
 }

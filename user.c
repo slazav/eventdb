@@ -1,6 +1,7 @@
 #include "actions.h"
 #include <openssl/md5.h>
 #include <string.h>
+#include <stdint.h>
 
 /****************************************************************/
 
@@ -10,8 +11,8 @@
 
 /* structure for user database */
 typedef struct {
-  int  active, level;
-  unsigned char md5[MD5_DIGEST_LENGTH];
+  int32_t  active, level;
+  uint8_t md5[MD5_DIGEST_LENGTH];
 } user_t;
 
 const char * superuser = "root";
@@ -100,7 +101,7 @@ auth(const char * name, char * pwd){
 
   if (strlen(name)==0) return LVL_ANON;
 
-  if (strlen(pwd)==0) return LVL_NOAUTH;
+  if (strlen(pwd)==0 && index(name, '@')!=NULL) return LVL_NOAUTH;
 
   if (user_get(&user, name)!=0) return -1;
   if ( user.active &&

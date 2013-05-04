@@ -165,7 +165,7 @@ while (my $f = readdir DATADIR){
       }
     }
     if ($read==1){
-      if (/^title:\s+(.*)/){ print "<title>$1</title>\n"; next; }
+      if (/^title:\s+(.*)/){ print " <title>$1</title>\n"; next; }
       if (/^date:\s+(.*)/){
         my ($date1, $date2) = decode_date($1);
         print " <date1>$date1</date1>\n";

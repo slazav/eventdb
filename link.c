@@ -22,17 +22,17 @@
 /*********************************************************************/
 /* Link structure. In the database data is written after
    this structure, and pointers contain offsets from the beginning of
-   the structure. */
+   the structure. Don't put here arch-dependent things such as int or char*! */
 typedef struct {
-  int ctime, mtime;
-  int eventid;
-  int local; /* 0 or 1 -- is local file stored?*/
-  char * url,
-       * text,
-       * auth,
-       * owner;
-  int ntags;  /* number of int tags */
-  int * tags;
+  int32_t ctime, mtime;
+  int32_t eventid;
+  int8_t local; /* 0 or 1 -- is local file stored?*/
+  char_ptr url,
+           text,
+           auth,
+           owner;
+  int32_t ntags;  /* number of int tags */
+  int_ptr tags;
 } link_t;
 
 /*********************************************************************/
@@ -48,11 +48,11 @@ link2dbt(link_t * link){
 
   /* calculate data size and build data structure */
   val.size = sizeof(link_t)   /* static fields + pointers */
-           + strlen(link->url) + 1 /* including \0*/
-           + strlen(link->text) + 1
-           + strlen(link->auth) + 1
-           + strlen(link->owner) + 1
-           + sizeof(int) * link->ntags;
+           + strlen(link->url.ptr) + 1 /* including \0*/
+           + strlen(link->text.ptr) + 1
+           + strlen(link->auth.ptr) + 1
+           + strlen(link->owner.ptr) + 1
+           + sizeof(int32_t) * link->ntags;
   val.data = malloc(val.size);
   if (val.data==NULL){
     fprintf(stderr, "Error: can't allocate memory\n");
@@ -63,27 +63,27 @@ link2dbt(link_t * link){
   *obj = *link;
 
   ptr=sizeof(link_t);
-  strcpy(val.data + ptr, link->url); /* copy data */
+  strcpy(val.data + ptr, link->url.ptr); /* copy data */
     remove_html(val.data + ptr,  REMOVE_NL);
-    obj->url = NULL + ptr;
-    ptr += strlen(link->url) + 1;
-  strcpy(val.data + ptr, link->text);
+    obj->url.off = ptr;
+    ptr += strlen(link->url.ptr) + 1;
+  strcpy(val.data + ptr, link->text.ptr);
     remove_html(val.data + ptr,  REMOVE_NL);
-    obj->text = NULL + ptr;
-    ptr += strlen(link->text) + 1;
-  strcpy(val.data + ptr, link->auth);
+    obj->text.off = ptr;
+    ptr += strlen(link->text.ptr) + 1;
+  strcpy(val.data + ptr, link->auth.ptr);
     remove_html(val.data + ptr,  REMOVE_NL);
-    obj->auth = NULL + ptr;
-    ptr += strlen(link->auth) + 1;
-  strcpy(val.data + ptr, link->owner);
+    obj->auth.off = ptr;
+    ptr += strlen(link->auth.ptr) + 1;
+  strcpy(val.data + ptr, link->owner.ptr);
     remove_html(val.data + ptr,  REMOVE_NL);
-    obj->owner = NULL + ptr;
-    ptr += strlen(link->owner) + 1;
+    obj->owner.off = ptr;
+    ptr += strlen(link->owner.ptr) + 1;
 
-  obj->tags = (int *)(NULL + ptr);
+  obj->tags.off = ptr;
   for (i=0; i<link->ntags; i++){
-    * (int *)(val.data + ptr) = link->tags[i];
-    ptr+=sizeof(int);
+    * (int32_t *)(val.data + ptr) = link->tags.ptr[i];
+    ptr+=sizeof(int32_t);
   }
   return val;
 }
@@ -93,11 +93,11 @@ link_t
 dbt2link(const DBT * dbt){
   link_t obj = * (link_t *)dbt->data;
   /* Overwrite pointers to absolute values */
-  obj.url   = (char *)dbt->data + ((void*)obj.url   - NULL); /* (char*) + (int)(void*-void*) */
-  obj.text  = (char *)dbt->data + ((void*)obj.text  - NULL);
-  obj.auth  = (char *)dbt->data + ((void*)obj.auth  - NULL);
-  obj.owner = (char *)dbt->data + ((void*)obj.owner - NULL);
-  obj.tags  = (int *)(dbt->data + ((void*)obj.tags  - NULL)); /* careful with types!*/
+  obj.url.ptr   = (char *)dbt->data + obj.url.off; /* (char*) + (int) */
+  obj.text.ptr  = (char *)dbt->data + obj.text.off;
+  obj.auth.ptr  = (char *)dbt->data + obj.auth.off;
+  obj.owner.ptr = (char *)dbt->data + obj.owner.off;
+  obj.tags.ptr  = (int *)(dbt->data + obj.tags.off);
   return obj;
 }
 
@@ -122,12 +122,13 @@ link_prn(int id, link_t * obj){
   printf("  <mtime>%d</mtime>\n",     obj->mtime);
   printf("  <eventid>%d</eventid>\n", obj->eventid);
   printf("  <local>%d</local>\n",     obj->local);
-  printf("  <url>%s</url>\n",         obj->url);
-  printf("  <text>%s</text>\n",       obj->text);
-  printf("  <auth>%s</auth>\n",       obj->auth);
-  printf("  <owner>%s</owner>\n",     obj->owner);
+  printf("  <url>%s</url>\n",         obj->url.ptr);
+  printf("  <text>%s</text>\n",       obj->text.ptr);
+  printf("  <auth>%s</auth>\n",       obj->auth.ptr);
+  printf("  <owner>%s</owner>\n",     obj->owner.ptr);
   printf("  <tags>");
-  for (i=0; i<obj->ntags; i++) printf("%s%d", i==0?"":",", obj->tags[i]);
+  for (i=0; i<obj->ntags; i++)
+    printf("%s%d", i==0?"":",", obj->tags.ptr[i]);
   printf("</tags>\n");
   printf(" </link>\n");
 }
@@ -163,11 +164,11 @@ link_last_id(){
 /* NOTE: link.tags must be a valid pointer to int[MAX_TAGS]*/
 int
 link_parse(char **argv, link_t * link){
-  link->url   = argv[0];
-  link->text  = argv[1];
-  link->auth  = argv[2];
+  link->url.ptr   = argv[0];
+  link->text.ptr  = argv[1];
+  link->auth.ptr  = argv[2];
   link->local = get_int(argv[3], "local flag"); if (link->local<0) return -1;
-  if ((link->ntags=get_tags(argv[4], link->tags)) <0) return -1;
+  if ((link->ntags=get_tags(argv[4], link->tags.ptr)) <0) return -1;
   return 0;
 }
 
@@ -222,11 +223,11 @@ link_mperm_check(int id, char *user, int level){
 
   /* check link owner */
   if (link_get(id, &ll)!=0) return -1;
-  if (strcmp(user, ll.owner)==0) return 0;
+  if (strcmp(user, ll.owner.ptr)==0) return 0;
 
   /* check event owner */
   if (event_get(ll.eventid, &ev)!=0) return -1;
-  if (strcmp(user, ev.owner)==0) return 0;
+  if (strcmp(user, ev.owner.ptr)==0) return 0;
 
   fprintf(stderr, "Error: %s is not allowed to modify data\n", user);
   return -1;
@@ -378,12 +379,12 @@ do_link_create(char * user, int level, char **argv){
   /* Parse arguments and make DBT for new link */
   obj.ctime = time(NULL);
   obj.mtime = obj.ctime;
-  obj.owner = user;
-  obj.tags  = tags;
+  obj.owner.ptr = user;
+  obj.tags.ptr  = tags;
   if (link_parse(argv+1, &obj)!=0) return -1;
 
   /* put file */
-  if (obj.local && file_put(obj.url, 0)!=0) return -1;
+  if (obj.local && file_put(obj.url.ptr, 0)!=0) return -1;
 
   /* write metadata */
   if (link_put(id, &obj, DB_NOOVERWRITE)!=0) return -1;
@@ -411,18 +412,18 @@ do_link_edit(char * user, int level, char **argv){
   obj.mtime = time(NULL);
   obj.ctime = oobj.ctime;
   obj.owner = oobj.owner;
-  obj.tags  = tags;
+  obj.tags.ptr  = tags;
   if (link_parse(argv+1, &obj)!=0) return -1;
   obj.local = oobj.local; /* can't change local flag! */
 
   /* move file if needed */
-  if (oobj.local && strcmp(oobj.url,obj.url)!=0){
+  if (oobj.local && strcmp(oobj.url.ptr,obj.url.ptr)!=0){
     char *path, *opath;
     struct stat stat_buf;
     int ret;
-    path = build_path(obj.url); /* Do free after use */
+    path = build_path(obj.url.ptr); /* Do free after use */
     if (path==NULL) return -1;
-    opath = build_path(oobj.url); /* Do free after use */
+    opath = build_path(oobj.url.ptr); /* Do free after use */
     if (opath==NULL) {free(path); return -1;}
     /* prevent from overwriting */
     if (stat(path, &stat_buf)==0){
@@ -461,7 +462,7 @@ do_link_delete(char * user, int level, char **argv){
 
   /* delete local file if needed*/
   if (oobj.local){
-    char * path=build_path(oobj.url); /* free after use! */
+    char * path=build_path(oobj.url.ptr); /* free after use! */
     if (path==NULL) return -1;
     if (unlink(path)!=0){
       perror("Error");
@@ -505,7 +506,7 @@ do_link_replace(char * user, int level, char **argv){
     return -1;
   }
 
-  return file_put(oobj.url, 1);
+  return file_put(oobj.url.ptr, 1);
 }
 
 
@@ -568,7 +569,7 @@ do_link_search(char * user, int level, char **argv){
   DBT key  = mk_empty_dbt();
   DBT val = mk_empty_dbt();
 
-  mask.tags=tags;
+  mask.tags.ptr=tags;
   if (link_parse(argv, &mask)!=0) return -1;
 
   ret = dbs.links->cursor(dbs.links, NULL, &curs, 0);
@@ -585,16 +586,16 @@ do_link_search(char * user, int level, char **argv){
       int fl=0;
       for (i=0; i<mask.ntags; i++){
         for (j=0; j<obj.ntags; j++){
-          if (mask.tags[i] == obj.tags[j]) fl=1;
+          if (mask.tags.ptr[i] == obj.tags.ptr[j]) fl=1;
         }
       }
       if (fl==0) continue;
     }
 
     /* search in text fields: */
-    if (strlen(mask.url)  && !strcasestr(obj.url,  mask.url))  continue;
-    if (strlen(mask.text) && !strcasestr(obj.text, mask.text)) continue;
-    if (strlen(mask.auth) && !strcasestr(obj.auth, mask.auth)) continue;
+    if (strlen(mask.url.ptr)  && !strcasestr(obj.url.ptr,  mask.url.ptr))  continue;
+    if (strlen(mask.text.ptr) && !strcasestr(obj.text.ptr, mask.text.ptr)) continue;
+    if (strlen(mask.auth.ptr) && !strcasestr(obj.auth.ptr, mask.auth.ptr)) continue;
 
     link_prn(* (int*)key.data, &obj);
   }

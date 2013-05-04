@@ -19,11 +19,11 @@ event2dbt(event_t * event){
 
   /* calculate data size and build data structure */
   val.size = sizeof(event_t)   /* static fields + pointers */
-           + strlen(event->title) + 1 /* including \0*/
-           + strlen(event->body) + 1
-           + strlen(event->people) + 1
-           + strlen(event->route) + 1
-           + strlen(event->owner) + 1
+           + strlen(event->title.ptr) + 1 /* including \0*/
+           + strlen(event->body.ptr) + 1
+           + strlen(event->people.ptr) + 1
+           + strlen(event->route.ptr) + 1
+           + strlen(event->owner.ptr) + 1
            + sizeof(int) * event->ntags;
   val.data = malloc(val.size);
   if (val.data==NULL){
@@ -35,30 +35,30 @@ event2dbt(event_t * event){
   *ev = *event;
 
   ptr=sizeof(event_t);
-  strcpy(val.data + ptr, event->title); /* copy data */
+  strcpy(val.data + ptr, event->title.ptr); /* copy data */
     remove_html(val.data + ptr,  REMOVE_NL);
-    ev->title = NULL + ptr;
-    ptr += strlen(event->title) + 1;
-  strcpy(val.data + ptr, event->body);
+    ev->title.off = ptr;
+    ptr += strlen(event->title.ptr) + 1;
+  strcpy(val.data + ptr, event->body.ptr);
     remove_html(val.data + ptr,  KEEP_NL);
-    ev->body = NULL + ptr;
-    ptr += strlen(event->body) + 1;
-  strcpy(val.data + ptr, event->people);
+    ev->body.off = ptr;
+    ptr += strlen(event->body.ptr) + 1;
+  strcpy(val.data + ptr, event->people.ptr);
     remove_html(val.data + ptr,  REMOVE_NL);
-    ev->people = NULL + ptr;
-    ptr += strlen(event->people) + 1;
-  strcpy(val.data + ptr, event->route);
+    ev->people.off = ptr;
+    ptr += strlen(event->people.ptr) + 1;
+  strcpy(val.data + ptr, event->route.ptr);
     remove_html(val.data + ptr,  REMOVE_NL);
-    ev->route = NULL + ptr;
-    ptr += strlen(event->route) + 1;
-  strcpy(val.data + ptr, event->owner);
+    ev->route.off = ptr;
+    ptr += strlen(event->route.ptr) + 1;
+  strcpy(val.data + ptr, event->owner.ptr);
     remove_html(val.data + ptr,  REMOVE_NL);
-    ev->owner = NULL + ptr;
-    ptr += strlen(event->owner) + 1;
+    ev->owner.off = ptr;
+    ptr += strlen(event->owner.ptr) + 1;
 
-  ev->tags = (int *)(NULL + ptr);
+  ev->tags.off = ptr;
   for (i=0; i<event->ntags; i++){
-    * (int *)(val.data + ptr) = event->tags[i];
+    * (int32_t *)(val.data + ptr) = event->tags.ptr[i];
     ptr+=sizeof(int);
   }
   return val;
@@ -69,12 +69,12 @@ event_t
 dbt2event(const DBT * dbt){
   event_t ev = * (event_t *)dbt->data;
   /* Overwrite pointers to absolute values */
-  ev.title  = (char *)dbt->data + ((void*)ev.title - NULL); /* (char*) + (int)(void*-void*) */
-  ev.body   = (char *)dbt->data + ((void*)ev.body - NULL);
-  ev.people = (char *)dbt->data + ((void*)ev.people - NULL);
-  ev.route  = (char *)dbt->data + ((void*)ev.route - NULL);
-  ev.owner  = (char *)dbt->data + ((void*)ev.owner - NULL);
-  ev.tags   = (int *)(dbt->data + ((void*)ev.tags - NULL)); /* careful with types!*/
+  ev.title.ptr  = (char *)dbt->data + ev.title.off; /* (char*) + (int) */
+  ev.body.ptr   = (char *)dbt->data + ev.body.off;
+  ev.people.ptr = (char *)dbt->data + ev.people.off;
+  ev.route.ptr  = (char *)dbt->data + ev.route.off;
+  ev.owner.ptr  = (char *)dbt->data + ev.owner.off;
+  ev.tags.ptr   = (uint32_t *)(dbt->data + ev.tags.off);
   return ev;
 }
 
@@ -99,13 +99,13 @@ event_prn(int id, event_t * ev){
   printf(" <mtime>%d</mtime>\n",   ev->mtime);
   printf(" <date1>%d</date1>\n",   ev->date1);
   printf(" <date2>%d</date2>\n",   ev->date2);
-  printf(" <title>%s</title>\n",  ev->title);
-  printf(" <body>%s</body>\n",    ev->body);
-  printf(" <people>%s</people>\n",ev->people);
-  printf(" <route>%s</route>\n",  ev->route);
-  printf(" <owner>%s</owner>\n",  ev->owner);
+  printf(" <title>%s</title>\n",  ev->title.ptr);
+  printf(" <body>%s</body>\n",    ev->body.ptr);
+  printf(" <people>%s</people>\n",ev->people.ptr);
+  printf(" <route>%s</route>\n",  ev->route.ptr);
+  printf(" <owner>%s</owner>\n",  ev->owner.ptr);
   printf(" <tags>");
-  for (i=0; i<ev->ntags; i++) printf("%s%d", i==0?"":",", ev->tags[i]);
+  for (i=0; i<ev->ntags; i++) printf("%s%d", i==0?"":",", ev->tags.ptr[i]);
   printf("</tags>\n");
   list_event_links(id);
   printf("</event>\n");
@@ -142,14 +142,14 @@ event_last_id(){
 /* NOTE: event.tags must be a valid pointer to int[MAX_TAGS]. */
 int
 event_parse(char **argv, event_t * event){
-  event->title  = argv[0];
-  event->body   = argv[1];
-  event->people = argv[2];
-  event->route  = argv[3];
+  event->title.ptr  = argv[0];
+  event->body.ptr   = argv[1];
+  event->people.ptr = argv[2];
+  event->route.ptr  = argv[3];
   event->date1 = get_int(argv[4], "date1"); if (event->date1<0) return -1;
   event->date2 = get_int(argv[5], "date2"); if (event->date2<0) return -1;
   if (event->date2<event->date1) event->date2=event->date1;
-  if ((event->ntags=get_tags(argv[6], event->tags)) <0) return -1;
+  if ((event->ntags=get_tags(argv[6], event->tags.ptr)) <0) return -1;
   return 0;
 }
 
@@ -201,10 +201,10 @@ event_mperm_check(int id, char *user, int level){
   if (level >= LVL_MODER) return 0;
 
   if (event_get(id, &obj)!=0) return -1;
-  if (strcmp(user, obj.owner)==0) return 0;
+  if (strcmp(user, obj.owner.ptr)==0) return 0;
 
   fprintf(stderr, "Error: %s is not allowed to modify data owned by %s\n",
-      user, obj.owner);
+      user, obj.owner.ptr);
   return -1;
 }
 
@@ -226,8 +226,8 @@ do_event_create(char * user, int level, char **argv){
   /* Parse arguments and make DBT for new event */
   ev.ctime = time(NULL);
   ev.mtime = ev.ctime;
-  ev.owner = user;
-  ev.tags  = tags;
+  ev.owner.ptr = user;
+  ev.tags.ptr  = tags;
   if (event_parse(argv, &ev)!=0) return -1;
 
   if (event_put(id, &ev, DB_NOOVERWRITE)!=0) return -1;
@@ -251,7 +251,7 @@ do_event_edit(char * user, int level, char **argv){
   if (event_get(id, &oev)!=0) return -1;
 
   /* Parse arguments and make DBT for new event */
-  ev.tags=tags;
+  ev.tags.ptr = tags;
   if (event_parse(argv+1, &ev)!=0) return -1;
   ev.mtime = time(NULL);
   ev.ctime = oev.ctime;
@@ -342,7 +342,7 @@ do_event_search(char * user, int level, char **argv){
   DBT pval = mk_empty_dbt();
   char * txt = argv[0];
 
-  mask.tags=tags;
+  mask.tags.ptr = tags;
   if (event_parse(argv+1, &mask)!=0) return -1;
 
   ret = dbs.events->cursor(dbs.d2ev, NULL, &curs, 0);
@@ -366,17 +366,17 @@ do_event_search(char * user, int level, char **argv){
       int fl=0;
       for (i=0; i<mask.ntags; i++){
         for (j=0; j<ev.ntags; j++){
-          if (mask.tags[i] == ev.tags[j]) fl=1;
+          if (mask.tags.ptr[i] == ev.tags.ptr[j]) fl=1;
         }
       }
       if (fl==0) continue;
     }
 
     /* search in text fields: */
-    if (strlen(mask.title)  && !strcasestr(ev.title,  mask.title))  continue;
-    if (strlen(mask.body)   && !strcasestr(ev.body,   mask.body))   continue;
-    if (strlen(mask.people) && !strcasestr(ev.people, mask.people)) continue;
-    if (strlen(mask.route)  && !strcasestr(ev.route,  mask.route))  continue;
+    if (strlen(mask.title.ptr)  && !strcasestr(ev.title.ptr,  mask.title.ptr))  continue;
+    if (strlen(mask.body.ptr)   && !strcasestr(ev.body.ptr,   mask.body.ptr))   continue;
+    if (strlen(mask.people.ptr) && !strcasestr(ev.people.ptr, mask.people.ptr)) continue;
+    if (strlen(mask.route.ptr)  && !strcasestr(ev.route.ptr,  mask.route.ptr))  continue;
 
     /* search in text fields: */
     if (strlen(txt) && (

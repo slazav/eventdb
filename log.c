@@ -2,14 +2,15 @@
 #include "string.h"
 #include "stdlib.h"
 #include "time.h"
+#include "event.h"
 
 /*********************************************************************/
 /* structure for log database */
 typedef struct {
-  int event;
-  char * user,
-       * action,
-       * msg;
+  int32_t event;
+  char_ptr user,
+           action,
+           msg;
 } log_t;
 
 /*********************************************************************/
@@ -29,9 +30,9 @@ log2dbt(log_t * log){
 
   /* calculate data size and build data structure */
   val.size = sizeof(log_t)   /* static fields + pointers */
-           + strlen(log->user) + 1 /* including \0*/
-           + strlen(log->action) + 1
-           + strlen(log->msg) + 1;
+           + strlen(log->user.ptr) + 1 /* including \0*/
+           + strlen(log->action.ptr) + 1
+           + strlen(log->msg.ptr) + 1;
   val.data = malloc(val.size);
   if (val.data==NULL){
     fprintf(stderr, "Error: can't allocate memory\n");
@@ -42,18 +43,18 @@ log2dbt(log_t * log){
   *l1 = *log;
 
   ptr=sizeof(log_t);
-  strcpy(val.data + ptr, log->user); /* copy data */
+  strcpy(val.data + ptr, log->user.ptr); /* copy data */
     remove_html(val.data + ptr,  REMOVE_NL);
-    l1->user = NULL + ptr;
-    ptr += strlen(log->user) + 1;
-  strcpy(val.data + ptr, log->action);
+    l1->user.off = ptr;
+    ptr += strlen(log->user.ptr) + 1;
+  strcpy(val.data + ptr, log->action.ptr);
     remove_html(val.data + ptr,  REMOVE_NL);
-    l1->action = NULL + ptr;
-    ptr += strlen(log->action) + 1;
-  strcpy(val.data + ptr, log->msg);
+    l1->action.off = ptr;
+    ptr += strlen(log->action.ptr) + 1;
+  strcpy(val.data + ptr, log->msg.ptr);
     remove_html(val.data + ptr,  REMOVE_NL);
-    l1->msg = NULL + ptr;
-    ptr += strlen(log->msg) + 1;
+    l1->msg.off = ptr;
+    ptr += strlen(log->msg.ptr) + 1;
   return val;
 }
 
@@ -62,9 +63,9 @@ log_t
 dbt2log(const DBT * dbt){
   log_t l1 = * (log_t *)dbt->data;
   /* Overwrite pointers to absolute values */
-  l1.user   = (char *)dbt->data + ((void*)l1.user - NULL); /* (char*) + (int)(void*-void*) */
-  l1.action = (char *)dbt->data + ((void*)l1.action - NULL);
-  l1.msg    = (char *)dbt->data + ((void*)l1.msg - NULL);
+  l1.user.ptr   = (char *)dbt->data + l1.user.off; /* (char*) + (int)(void*-void*) */
+  l1.action.ptr = (char *)dbt->data + l1.action.off;
+  l1.msg.ptr    = (char *)dbt->data + l1.msg.off;
   return l1;
 }
 
@@ -73,9 +74,9 @@ void
 print_log(int id, log_t * l1){
   int i;
   printf("<log id=%d event=%d>\n", id, l1->event);
-  printf(" <user>%s</user>\n",     l1->user);
-  printf(" <action>%s</action>\n", l1->action);
-  printf(" <msg>%s</msg>\n",       l1->msg);
+  printf(" <user>%s</user>\n",     l1->user.ptr);
+  printf(" <action>%s</action>\n", l1->action.ptr);
+  printf(" <msg>%s</msg>\n",       l1->msg.ptr);
   printf("</log>\n");
 }
 
@@ -89,9 +90,9 @@ do_log_new(char * user, int level, char **argv){
   DBT key, val;
 
   log.event  = atoi(argv[0]);
-  log.user   = argv[1];
-  log.action = argv[2];
-  log.msg    = argv[3];
+  log.user.ptr   = argv[1];
+  log.action.ptr = argv[2];
+  log.msg.ptr    = argv[3];
 
   key = mk_uint_dbt(&id);
   val = log2dbt(&log); /* do free after use!*/
