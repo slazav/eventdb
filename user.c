@@ -180,7 +180,7 @@ do_user_del(char * user, int level, char **argv){
 }
 
 int
-do_user_activ_set(char * user, int level, char **argv){
+do_user_seta(char * user, int level, char **argv){
   char *mod_usr = argv[0];
   char *mod_act = argv[1];
   user_t user_o;
@@ -202,7 +202,7 @@ do_user_activ_set(char * user, int level, char **argv){
 }
 
 int
-do_user_level_set(char * user, int level, char **argv){
+do_user_setl(char * user, int level, char **argv){
   char *mod_usr = argv[0];
   int new_level = get_int(argv[1], "level");
   user_t user_o;

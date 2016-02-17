@@ -36,8 +36,9 @@ typedef int(action_func)(char*, int, char **);
 /* print links for one event (see link.h) */
 int list_event_links(int eventid);
 
+/*user subsystem */
 extern action_func do_level_show, do_root_add, do_user_add, do_user_del,
-                   do_user_activ_set, do_user_level_set, do_user_chpwd,
+                   do_user_seta, do_user_setl, do_user_chpwd,
                    do_user_mypwd, do_user_list, do_user_dump, do_user_show;
 
 extern action_func do_event_create, do_event_edit, do_event_delete,

@@ -1,6 +1,6 @@
 #include "event.h"
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 
 /*********************************************************************/
 /* Build DBT object from event structure.

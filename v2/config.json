@@ -1,0 +1,31 @@
+{
+  "datadir": "./data",
+  "logsdir": "./logs",
+  "filedir": "./file",
+  "loginza_id":  "",
+  "loginza_sec": "",
+  "test_users": {
+    "382512edfa7149b79b910cf6227e3e16":{
+       "identity":"http:\/\/slazav.livejournal.com\/",
+       "provider":"http:\/\/www.livejournal.com\/openid\/server.bml"
+    },
+    "7202c11c442dbd1e7c7f9c33e2ee61d9":{
+       "identity":"https:\/\/www.facebook.com\/app_scoped_user_id\/100004349705357\/",
+       "provider":"http:\/\/www.facebook.com\/",
+       "uid":"100004349705357",
+       "email":"slazav@narod.ru",
+       "name":{"first_name":"Zavjalov","last_name":"Vladislav","full_name":"Zavjalov Vladislav"},
+       "gender":"M",
+       "photo":"https:\/\/graph.facebook.com\/100004349705357\/picture"
+    },
+    "6222d12c54a233deae789c3ce22eb1d9":{
+       "identity":"http:\/\/vk.com\/id322772569",
+       "provider":"http:\/\/vk.com\/",
+       "uid":322772569,
+       "name":{"first_name":"Zavjalov","last_name":"Vladislav"},
+       "gender":"","nickname":"","dob":"1977-07-31",
+       "address":{"home":{"country":0}},
+       "photo":"http:\/\/cs622023.vk.me\/v622023965\/4b2f1\/bCH2GKE6Cx8.jpg"
+    }
+  }
+}
