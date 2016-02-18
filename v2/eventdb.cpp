@@ -17,8 +17,9 @@ main(int argc, char **argv){
     std::string action(argv[1]);
     CFG cfg; /* read parameters from the config file */
 
-    if      (action == "login")  do_login(cfg, argc-1, argv+1); 
-    else if (action == "logout") do_logout(cfg, argc-1, argv+1);
+    if      (action == "login")     do_login(cfg, argc-1, argv+1); 
+    else if (action == "logout")    do_logout(cfg, argc-1, argv+1);
+    else if (action == "user_info") do_user_info(cfg, argc-1, argv+1);
     else throw Err("eventdb") << "Unknown action";
   }
   catch(Err e){

@@ -15,5 +15,6 @@
 
 void do_login(const CFG & cfg, int argc, char **argv);
 void do_logout(const CFG & cfg, int argc, char **argv);
+void do_user_info(const CFG & cfg, int argc, char **argv);
 
 #endif
