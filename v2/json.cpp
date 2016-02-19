@@ -16,7 +16,7 @@ j_mkobj(){
 /* dump json to string */
 string
 j_dumpstr(json_t *root){
-  char * str = json_dumps(root, 0);
+  char * str = json_dumps(root, JSON_SORT_KEYS);
   if (!str) throw Err() << "can't write json to string";
   string s(str);
   free(str);

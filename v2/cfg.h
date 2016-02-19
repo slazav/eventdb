@@ -52,9 +52,7 @@ public:
     const char *key;
     json_t *value;
     json_object_foreach(tu, key, value){
-      char *str = json_dumps(value, 0);
-      test_users[key] = std::string(str);
-      free(str);
+      test_users[key] = j_dumpstr(value);
     }
     json_decref(root);
   }

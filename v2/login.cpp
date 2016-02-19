@@ -190,7 +190,7 @@ get_login_info(const CFG & cfg, const char *tok){
       cfg.loginza_sec.c_str(), cfg.loginza_sec.c_str());
   }
   /* log the information */
-  ofstream out((cfg.logsdir + "/login.txt").c_str());
+  ofstream out((cfg.logsdir + "/login.txt").c_str(), ios::app);
   out << time_str() << " " << juser << std::endl;
 
   /* parse json string from loginza and fill user information */
