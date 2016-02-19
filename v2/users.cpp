@@ -14,16 +14,21 @@
 
 using namespace std;
 
+/* check argument number */
+void
+check_args(const int argc, const int n){
+  if (argc!=n+1)
+    throw Err() << "wrong number of arguments, should be " << n;
+}
+
 /********************************************************************/
 /** Actions
 /********************************************************************/
 void
 do_login(const CFG & cfg, int argc, char **argv){
 
-  Err("login");
-
-  /* check arguments*/
-  if (argc!=1) throw Err() << "wrong number of arguments, should be 0";
+  Err("login");  // set error type
+  check_args(argc, 0); // check argument number
 
   /* read login token from stdin*/
   string token;
@@ -58,30 +63,35 @@ do_login(const CFG & cfg, int argc, char **argv){
   throw Exc() << j_dumpstr(root);
 }
 
+
+
+/********************************************************************/
 void
 do_logout(const CFG & cfg, int argc, char **argv){
   Err("logout");
-  if (argc!=1) throw Err() << "wrong number of arguments, should be 0";
+  check_args(argc, 0);
 
   /* read session id from stdin*/
   string s;
   cin >> s;
   if (!cin.good()) throw Err() << "session id expected";
-  UserDB user_db(cfg, 0);
+  UserDB user_db(cfg);
   json_t * user = user_db.get_by_session(s);
-  if (!user) throw Err() << "bad session";
+  if (!user) throw Err() << "unknown session id";
 
   /* remove session */
   j_putstr(user, "session", "");
   /* Write user to the database */
   user_db.put(user);
-  throw Exc() << "{}";
+
+  throw Exc() << j_dumpstr(user);
 }
 
+/********************************************************************/
 void
 do_user_info(const CFG & cfg, int argc, char **argv){
   Err("user_info");
-  if (argc!=1) throw Err() << "wrong number of arguments, should be 0";
+  check_args(argc, 0);
 
   /* read session id from stdin*/
   string s;
@@ -89,8 +99,55 @@ do_user_info(const CFG & cfg, int argc, char **argv){
   if (!cin.good()) throw Err() << "session id expected";
   UserDB user_db(cfg, DB_RDONLY);
   json_t * user = user_db.get_by_session(s);
-  if (!user) throw Err() << "bad session";
+  if (!user) throw Err() << "unknown session id";
 
   throw Exc() << j_dumpstr(user);
 }
 
+/********************************************************************/
+void
+do_set_alias(const CFG & cfg, int argc, char **argv){
+  Err("user_info");
+  check_args(argc, 1);
+  const char *alias = argv[1];
+
+  /* read session id from stdin*/
+  string s;
+  cin >> s;
+  if (!cin.good()) throw Err() << "session id expected";
+  UserDB user_db(cfg);
+  json_t * user = user_db.get_by_session(s);
+  if (!user) throw Err() << "unknown session id";
+
+  /* change alias */
+  j_putstr(user, "alias", alias);
+  /* Write user to the database */
+  user_db.put(user);
+
+  throw Exc() << j_dumpstr(user);
+}
+
+/********************************************************************/
+void
+do_set_abbr(const CFG & cfg, int argc, char **argv){
+  Err("user_info");
+  check_args(argc, 1);
+  const char *abbr = argv[1];
+
+  /* read session id from stdin*/
+  string s;
+  cin >> s;
+  if (!cin.good()) throw Err() << "session id expected";
+  UserDB user_db(cfg);
+  json_t * user = user_db.get_by_session(s);
+  if (!user) throw Err() << "unknown session id";
+
+  /* change alias */
+  j_putstr(user, "abbr", abbr);
+  /* Write user to the database */
+  user_db.put(user);
+
+  throw Exc() << j_dumpstr(user);
+}
+
+/********************************************************************/
