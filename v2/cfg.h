@@ -31,6 +31,7 @@ public:
 
   /* constructor: read config file and set all fields */
   CFG(){
+    Err("read_config");
     json_t *root = j_loadfile(CFG_FILE);
     datadir = j_getstr(root, "datadir");
     logsdir = j_getstr(root, "logsdir");
@@ -46,7 +47,7 @@ public:
     }
     if (!json_is_object(tu)){
       json_decref(root);
-      throw Err("read_config") << "test_users is not an object";
+      throw Err() << "test_users is not an object";
     }
     const char *key;
     json_t *value;

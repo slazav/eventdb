@@ -20,15 +20,15 @@ using namespace std;
 void
 do_login(const CFG & cfg, int argc, char **argv){
 
+  Err("login");
+
   /* check arguments*/
-  if (argc!=1) throw Err("login")
-    << "wrong number of arguments, should be 0";
+  if (argc!=1) throw Err() << "wrong number of arguments, should be 0";
 
   /* read login token from stdin*/
   string token;
   cin >> token;
-  if (!cin.good())
-    throw Err("eventdb_login") << "login token expected";
+  if (!cin.good()) throw Err() << "login token expected";
 
   json_t *root = get_login_info(cfg, token.c_str());
 
@@ -60,24 +60,23 @@ do_login(const CFG & cfg, int argc, char **argv){
 
 void
 do_logout(const CFG & cfg, int argc, char **argv){
-  if (argc!=1) throw Err("login")
-    << "wrong number of arguments, should be 0";
+  Err("logout");
+  if (argc!=1) throw Err() << "wrong number of arguments, should be 0";
 }
 
 void
 do_user_info(const CFG & cfg, int argc, char **argv){
-  if (argc!=1) throw Err("login")
-    << "wrong number of arguments, should be 0";
+  Err("user_info");
+  if (argc!=1) throw Err() << "wrong number of arguments, should be 0";
 
   /* read session id from stdin*/
   string s;
   cin >> s;
-  if (!cin.good())
-    throw Err("eventdb_user_info") << "session id expected";
+  if (!cin.good()) throw Err() << "session id expected";
 
   UserDB user_db(cfg);
   json_t * user = user_db.get_by_session(s);
-  if (!user) throw Err("user_info") << "bad session";
+  if (!user) throw Err() << "bad session";
   throw Exc() << j_dumpstr(user);
 }
 

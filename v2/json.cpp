@@ -10,14 +10,14 @@ using namespace std;
 json_t *
 j_mkobj(){
   json_t * root = json_object();
-  if (!root) throw Err("json_mkobj") << "can't create json object";
+  if (!root) throw Err() << "can't create json object";
 }
 
 /* dump json to string */
 string
 j_dumpstr(json_t *root){
   char * str = json_dumps(root, 0);
-  if (!str) throw Err("json_dumpstr") << "can't write json to string";
+  if (!str) throw Err() << "can't write json to string";
   string s(str);
   free(str);
   return s;
@@ -28,7 +28,7 @@ json_t *
 j_loadstr(const string & str){
   json_error_t e;
   json_t * root = json_loads(str.c_str(), 0, &e);
-  if (!root) throw Err("json_loadstr") << e.text;
+  if (!root) throw Err() << "can't parse json: " << e.text;
 }
 
 /* load json from file */
@@ -36,7 +36,7 @@ json_t *
 j_loadfile(const string & file){
   json_error_t e;
   json_t * root = json_load_file(file.c_str(), 0, &e);
-  if (!root) throw Err("json_loadfile") << e.text;
+  if (!root) throw Err() << "can't parse json file: " << file << ": " << e.text;
 }
 
 
@@ -47,7 +47,7 @@ j_getstr(json_t *root, const string & key, const char *def = NULL){
   /* check if root is an object object, throw exception if not */
   if (!json_is_object(root)){
     json_decref(root);
-    throw Err("json_getstr") << "json object expected";
+    throw Err() << "json object expected";
   }
   /* extract a field */
   json_t * val = json_object_get(root, key.c_str());
@@ -55,11 +55,11 @@ j_getstr(json_t *root, const string & key, const char *def = NULL){
   if (!val){ /* no such key */
     if (def) return string(def);
     json_decref(root);
-    throw Err("json_getstr")  << "Can't find parameter: " << key;
+    throw Err()  << "can't find parameter: " << key;
   }
   if (!json_is_string(val)){
     json_decref(root);
-    throw Err("json_getstr") << "json string expected: " << key;
+    throw Err() << "json string expected: " << key;
   }
   return string(json_string_value(val));
 }
@@ -68,7 +68,7 @@ j_getstr(json_t *root, const string & key, const char *def = NULL){
 void
 j_putstr(json_t *root, const string & key, const string & val){
   int ret = json_object_set_new(root, key.c_str(), json_string(val.c_str()));
-  if (ret) throw Err("json_putstr")  << "Can't put to json: " 
+  if (ret) throw Err()  << "can't put to json: "
              << key << " : " << val;
 }
 

@@ -52,11 +52,11 @@ string ask_loginza(const char *tok,
 
     /* create the socket */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) throw Err("loginza_connection") << "can't open a socket";
+    if (sockfd < 0) throw Err() << "can't open a socket";
 
     /* lookup the ip address */
     server = gethostbyname(host);
-    if (server == NULL) throw Err("loginza_connection") << "no such host";
+    if (server == NULL) throw Err() << "no such host: " << host;
 
     /* fill in the structure */
     memset(&serv_addr,0,sizeof(serv_addr));
@@ -66,15 +66,14 @@ string ask_loginza(const char *tok,
 
     /* connect the socket */
     if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
-         throw Err("loginza_connection") << "connection error";
+         throw Err() << "connection error";
 
     /* send the request */
     total = strlen(strbuf);
     sent = 0;
     do {
       bytes = write(sockfd,strbuf+sent,total-sent);
-      if (bytes < 0) throw Err("loginza_connection")
-          << "can't write message to a socket";
+      if (bytes < 0) throw Err() << "can't write message to a socket";
       if (bytes == 0) break;
       sent+=bytes;
     } while (sent < total);
@@ -85,14 +84,12 @@ string ask_loginza(const char *tok,
     received = 0;
     do {
         bytes = read(sockfd,strbuf+received,total-received);
-        if (bytes < 0) throw Err("loginza_connection")
-            << "bad reading response from socket";
+        if (bytes < 0) throw Err() << "bad reading response from socket";
         if (bytes == 0) break;
         received+=bytes;
     } while (received < total);
 
-    if (received == total) throw Err("loginza_connection")
-          << "too long response";
+    if (received == total) throw Err() << "too long response from loginza";
 
     /* close the socket */
     close(sockfd);
@@ -118,8 +115,14 @@ string get_provider(const string identity){
 json_t *
 parse_login_data(const string & juser){
 
-  /* convert string to json, get identity field */
+  /* convert string to json */
   json_t * root = j_loadstr(juser);
+
+  /* if loginza returned an error - throw it */
+  if (j_getstr(root, "error_message", "")!="")
+    throw Exc() << juser;
+
+  /* get identity field */
   std::string identity = j_getstr(root, "identity");
 
   /* default full_name and alias */
@@ -186,7 +189,6 @@ get_login_info(const CFG & cfg, const char *tok){
     juser = ask_loginza(tok,
       cfg.loginza_sec.c_str(), cfg.loginza_sec.c_str());
   }
-
   /* log the information */
   ofstream out((cfg.logsdir + "/login.txt").c_str());
   out << time_str() << " " << juser << std::endl;

@@ -25,19 +25,20 @@
 */
 
 class Err{
-  const std::string  t;
+  static std::string t;
   std::ostringstream s;
 
 public:
-  Err(const std::string & type = std::string()) : t(type){}
-  Err(const Err & o) : t(o.t){ s << o.s.str(); }
+  Err(const std::string & type = std::string()){
+    if (type.length()) t=type;
+  }
+  Err(const Err & o) { s << o.s.str(); }
 
   std::string str()  const { return s.str(); }
   std::string type() const { return t; }
   std::string json() const {
     return std::string("{\"error_type\":\"") + t + "\"," +
                         "\"error_message\":\"" + s.str() + "\"}"; }
-
   template <typename T>
   Err & operator<<(const T & o){ s << o; return *this; }
 };

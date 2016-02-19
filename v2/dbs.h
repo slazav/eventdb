@@ -47,13 +47,13 @@ void
 extract_field(const char *key, const DBT *pdata, DBT *skey){
   json_error_t e;
   json_t * root = json_loads((const char *)pdata->data, 0, &e);
-  if (!root) throw Err("extract_field") << e.text;
-  json_t * sess = json_object_get(root, key);
-  if (!json_is_string(sess)){
+  if (!root) throw Err() << e.text;
+  json_t * val = json_object_get(root, key);
+  if (!json_is_string(val)){
     json_decref(root);
-    throw Err("extract_field") << "can't get session";
+    throw Err() << "can't get json value";
   }
-  *skey = mk_dbt(json_string_value(sess));
+  *skey = mk_dbt(json_string_value(val));
 }
 
 /********************************************************************/
@@ -74,18 +74,18 @@ public:
 
     /* Initialize the DB handle */
     ret = db_create(&dbp, NULL, 0);
-    if (ret != 0) throw Err("db_create") << db_strerror(ret);
+    if (ret != 0) throw Err() << db_strerror(ret);
 
     /* setup key duplication if needed */
     if (dup){
       ret = dbp->set_flags(dbp, DB_DUPSORT);
-      if (ret != 0) throw Err("db_set_flags") << db_strerror(ret);
+      if (ret != 0) throw Err() << db_strerror(ret);
     }
 
     /* set key compare function if needed */
     if (cmpfunc){
       ret = dbp->set_bt_compare(dbp, cmpfunc);
-      if (ret != 0) throw Err("db_set_bt_compare") << db_strerror(ret);
+      if (ret != 0) throw Err() << db_strerror(ret);
     }
 
     /* Now open the database */
@@ -96,14 +96,14 @@ public:
                     DB_BTREE,    /* Database type (using btree) */
                     flags,       /* Open flags */
                     0);          /* File mode. Using defaults */
-    if (ret != 0) throw Err("db_open") << db_strerror(ret);
+    if (ret != 0) throw Err() << db_strerror(ret);
   }
 
   ~Database(){
     int ret;
     name="";
     if (dbp && (ret=dbp->close(dbp, 0))!=0)
-      throw Err("db_close") << db_strerror(ret);
+      throw Err() << db_strerror(ret);
     dbp=NULL;
   }
 
@@ -116,20 +116,20 @@ public:
     ret = dbp->get(dbp, NULL, &key, &val, 0);
     if (ret == DB_NOTFOUND) return false;
     if (ret == 0) return true;
-    throw Err("db_set") << name <<  "database: "<< db_strerror(ret);
+    throw Err() << name <<  "database: "<< db_strerror(ret);
   }
   void put(const std::string & skey, const std::string & sval, bool overwrite){
     DBT key = mk_dbt(skey);
     DBT val = mk_dbt(sval);
     int ret = dbp->put(dbp, NULL, &key, &val, overwrite? 0:DB_NOOVERWRITE);
-    if (ret!=0) throw Err("db_set") << name <<  "database: "<< db_strerror(ret);
+    if (ret!=0) throw Err() << name <<  "database: "<< db_strerror(ret);
   }
   std::string get(const std::string & skey){
     int ret;
     DBT key = mk_dbt(skey);
     DBT val = mk_dbt();
     ret = dbp->get(dbp, NULL, &key, &val, 0);
-    if (ret != 0) throw Err("db_get") << name << " database: " << db_strerror(ret);
+    if (ret != 0) throw Err() << name << " database: " << db_strerror(ret);
     return std::string((const char *)val.data);
   }
   // This is needed for secondary databeses, it gets key and value for the primary one.
@@ -139,7 +139,7 @@ public:
     DBT pkey = mk_dbt();
     DBT pval = mk_dbt();
     ret = dbp->pget(dbp, NULL, &key, &pkey, &pval, 0);
-    if (ret != 0) throw Err("db_pget") << name << " database: " << db_strerror(ret);
+    if (ret != 0) throw Err() << name << " database: " << db_strerror(ret);
     spkey = std::string((const char *)pkey.data);
     return std::string((const char *)pval.data);
   }
@@ -149,12 +149,12 @@ public:
     std::string sval = get(skey);
     json_error_t e;
     json_t * root = json_loads(sval.c_str(), 0, &e);
-    if (!root) throw Err("db_get_json") << e.text;
+    if (!root) throw Err() << e.text;
     return root;
   }
   void put_json(const std::string & skey, json_t * json, bool overwrite){
     char *str = json_dumps(json, 0);
-    if (!str) throw Err("db_set_json") << "can't write json";
+    if (!str) throw Err() << "can't write json";
     std::string sval(str);
     free(str);
     put(skey, sval, overwrite);
@@ -166,7 +166,7 @@ public:
     std::string sval = pget(skey, spkey);
     json_error_t e;
     json_t * root = json_loads(sval.c_str(), 0, &e);
-    if (!root) throw Err("db_pget_json") << e.text;
+    if (!root) throw Err() << e.text;
     json_object_set_new(root, pkey_name, json_string(spkey.c_str()));
     return root;
   }
@@ -178,13 +178,13 @@ public:
     DBT val = mk_dbt();
     /* Get a cursor */
     dbp->cursor(dbp, NULL, &cursorp, 0);
-    if (!cursorp) throw Err("db_is_empty") << "can't get cursor";
+    if (!cursorp) throw Err() << "can't get DB cursor";
     /* Try to get the first value */
     int ret = cursorp->get(cursorp, &key, &val, DB_NEXT);
     cursorp->close(cursorp); 
     if (ret == DB_NOTFOUND) return true;
     if (ret == 0) return false;
-    throw Err("db_is_empty") << "can't use cursor";
+    throw Err() << "can't use DB cursor";
   }
 
 };
