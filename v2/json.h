@@ -6,6 +6,7 @@
 
 /*
   Useful functions for json format handling.
+  See https://jansson.readthedocs.org/en/latest/index.html
 */
 
 json_t * j_mkobj();                    // create json object
@@ -21,5 +22,8 @@ std::string j_getstr(json_t *root,
 /* put key:pair value into json object */
 void j_putstr(json_t *root,
    const std::string & key, const std::string & val);
+
+/* delete entry from the object */
+void j_delstr(json_t *root, const std::string & key);
 
 #endif

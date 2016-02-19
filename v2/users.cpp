@@ -10,7 +10,7 @@
 #include "json.h"
 #include "login.h"
 #include "act.h"
-#include "dbs.h"
+#include "jdb.h"
 
 using namespace std;
 
@@ -35,7 +35,7 @@ do_login(const CFG & cfg, int argc, char **argv){
   std::string id = j_getstr(root, "identity");
 
   /* update user information from the database */
-  UserDB user_db(cfg);
+  UserDB user_db(cfg, DB_CREATE);
   json_t *user =  user_db.get_by_id(id);
   if (user){
     j_putstr(root, "level", j_getstr(user, "level"));
@@ -52,7 +52,7 @@ do_login(const CFG & cfg, int argc, char **argv){
   j_putstr(root, "session", user_db.make_session());
 
   /* Write user to the database */
-  user_db.put(id.c_str(), root);
+  user_db.put(root);
 
   /* return user information */
   throw Exc() << j_dumpstr(root);
@@ -62,6 +62,20 @@ void
 do_logout(const CFG & cfg, int argc, char **argv){
   Err("logout");
   if (argc!=1) throw Err() << "wrong number of arguments, should be 0";
+
+  /* read session id from stdin*/
+  string s;
+  cin >> s;
+  if (!cin.good()) throw Err() << "session id expected";
+  UserDB user_db(cfg, 0);
+  json_t * user = user_db.get_by_session(s);
+  if (!user) throw Err() << "bad session";
+
+  /* remove session */
+  j_putstr(user, "session", "");
+  /* Write user to the database */
+  user_db.put(user);
+  throw Exc() << "{}";
 }
 
 void
@@ -73,10 +87,10 @@ do_user_info(const CFG & cfg, int argc, char **argv){
   string s;
   cin >> s;
   if (!cin.good()) throw Err() << "session id expected";
-
-  UserDB user_db(cfg);
+  UserDB user_db(cfg, DB_RDONLY);
   json_t * user = user_db.get_by_session(s);
   if (!user) throw Err() << "bad session";
+
   throw Exc() << j_dumpstr(user);
 }
 

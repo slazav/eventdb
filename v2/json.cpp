@@ -72,3 +72,7 @@ j_putstr(json_t *root, const string & key, const string & val){
              << key << " : " << val;
 }
 
+void j_delstr(json_t *root, const std::string & key){
+  int ret = json_object_del(root, key.c_str());
+  if (ret) throw Err()  << "can't remove entry from json: " << key;
+}
