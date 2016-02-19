@@ -9,8 +9,8 @@
 #include <openssl/md5.h>
 #include "json.h"
 #include "login.h"
-#include "act.h"
 #include "jdb.h"
+#include "actions.h"
 
 using namespace std;
 

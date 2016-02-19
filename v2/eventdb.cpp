@@ -1,7 +1,7 @@
 #include <iostream>
 #include "err.h" // error handling
 #include "cfg.h" // read config file
-#include "act.h" // actions
+#include "actions.h" // actions
 
 /* Main program:
   - expects at least one argument with an action
