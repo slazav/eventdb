@@ -19,6 +19,59 @@
 #define BUFLEN 8192
 #define PATHLEN 1024
 
+
+/*********************************************************************/
+/* Build DBT object from general entry.
+   Space for .data is allocated, this field must be freed after use!
+   If error occures val.data is set to NULL! */
+DBT
+e2dbt(db_entry_t * ent){
+  DBT val = mk_empty_dbt();
+  int ptr, i;
+  link_t * obj;
+
+  /* calculate data size and build data structure */
+  val.size = sizeof(link_t)   /* static fields + pointers */
+           + strlen(link->url.ptr) + 1 /* including \0*/
+           + strlen(link->text.ptr) + 1
+           + strlen(link->auth.ptr) + 1
+           + strlen(link->owner.ptr) + 1
+           + sizeof(int32_t) * link->ntags;
+  val.data = malloc(val.size);
+  if (val.data==NULL){
+    fprintf(stderr, "Error: can't allocate memory\n");
+    return val;
+  }
+  /* copy link to the header of val.data */
+  obj = (link_t *)val.data;
+  *obj = *link;
+
+  ptr=sizeof(link_t);
+  strcpy(val.data + ptr, link->url.ptr); /* copy data */
+    remove_html(val.data + ptr,  REMOVE_NL);
+    obj->url.off = ptr;
+    ptr += strlen(link->url.ptr) + 1;
+  strcpy(val.data + ptr, link->text.ptr);
+    remove_html(val.data + ptr,  REMOVE_NL);
+    obj->text.off = ptr;
+    ptr += strlen(link->text.ptr) + 1;
+  strcpy(val.data + ptr, link->auth.ptr);
+    remove_html(val.data + ptr,  REMOVE_NL);
+    obj->auth.off = ptr;
+    ptr += strlen(link->auth.ptr) + 1;
+  strcpy(val.data + ptr, link->owner.ptr);
+    remove_html(val.data + ptr,  REMOVE_NL);
+    obj->owner.off = ptr;
+    ptr += strlen(link->owner.ptr) + 1;
+
+  obj->tags.off = ptr;
+  for (i=0; i<link->ntags; i++){
+    * (int32_t *)(val.data + ptr) = link->tags.ptr[i];
+    ptr+=sizeof(int32_t);
+  }
+  return val;
+}
+
 /*********************************************************************/
 /* Link structure. In the database data is written after
    this structure, and pointers contain offsets from the beginning of

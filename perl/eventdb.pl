@@ -132,14 +132,14 @@ user_change_op => sub($$$){
   my ($user, $pass, $level) = @_;
 
   my $usr=param('user') || '';
-  eventdb::query($user, $pass, 'user_activ_set',  $usr, 'on')
+  eventdb::query($user, $pass, 'user_seta',  $usr, 'on')
     if defined param('UserOn');
 
-  eventdb::query($user, $pass, 'user_activ_set', $usr, 'off')
+  eventdb::query($user, $pass, 'user_seta', $usr, 'off')
     if defined param('UserOff');
 
   my $new_level = param('new_level') || '';
-  eventdb::query($user, $pass, 'user_level_set', $usr, $new_level)
+  eventdb::query($user, $pass, 'user_setl', $usr, $new_level)
     if defined param('ChLevel');
 
   if (defined param('UserChPwd')){
