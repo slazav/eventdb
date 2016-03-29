@@ -12,9 +12,11 @@
 
 /* BercleyDB with json support
  *
- * see http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html
- *     https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/reftoc.html
- * for bercleydb docs and examples.
+ * libraries:
+ *   bercleydb: http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html
+ *              https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/reftoc.html
+ *   jansson:   https://github.com/akheron/jansson
+ *   janssonxx: https://github.com/bvakili-evault/janssonxx
  *
  * Keys are strings, values are json strings.
  */
@@ -27,6 +29,15 @@ DBT mk_dbt(const std::string & str);
 
 /********************************************************************/
 /* I do not know, how to keep this in the class... */
+/* I keep a "keyname" for any database, then I can build
+   secondary databases with their own keynames, automatically
+   set up extractor functions, and do search by any field in my json records.
+   Example:
+     user database has keyname "ID", and records  <ID> -> {"SESSION": <session>, ...}
+     session database has keyname "SESSION" and set up as a secondary database.
+     then call to the first database by ID and call to second one by SESSION
+     return the same json object with both ID and SESSION.
+ */
 extern std::map<DB*, std::string> key_names;
 
 /* get key_name*/
@@ -62,12 +73,12 @@ public:
 
   /* Put information into the database.
      Database key comes from json. */
-  void put(json_t * json, bool overwrite);
+  void put(json::json_t * json, bool overwrite);
 
   /* Get information from the database.
      For secondary databases primary key is added to the output.
      Remove it before putting information back to primary DB */
-  json_t *get(const std::string & skey);
+  json::json_t *get(const std::string & skey);
 
   /* is the database empty?*/
   bool is_empty();
@@ -99,32 +110,32 @@ public:
   }
 
   /* json information for an anonimous user */
-  json_t * anon_user(){
+  json::json_t * anon_user(){
     json_error_t e;
-    json_t * root = json_pack_ex(&e, 0, "{ssssssssssss}",
+    json::json_t * root = json_pack_ex(&e, 0, "{ssssssssssss}",
       "identity", "", "name", "", "alias", "", "abbr", "", "level", "anon", "session", "");
     if (!root){ json_decref(root); throw Err("write_user") << e.text; }
     return root;
   }
 
   /* get user by identity, alias, session */
-  json_t * get_by_id(const std::string &identity){
+  json::json_t * get_by_id(const std::string &identity){
     if (!users.exists(identity)) return NULL;
     return users.get(identity);
   }
 
-  json_t * get_by_session(const std::string &session){
+  json::json_t * get_by_session(const std::string &session){
     if (session == "") return anon_user();
     if (!sessions.exists(session)) return NULL;
     return sessions.get(session);
   }
 
-  json_t * get_by_alias(const std::string &alias){
+  json::json_t * get_by_alias(const std::string &alias){
     if (!aliases.exists(alias)) return NULL;
     return aliases.get(alias);
   }
 
-  void put(json_t * root){
+  void put(json::json_t * root){
     users.put(root, true);}
 
   /* create random session id */

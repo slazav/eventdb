@@ -1,4 +1,9 @@
 *.o
 eventdb
-dbs
 push.sh
+
+jansson
+data
+logs
+file
+tests

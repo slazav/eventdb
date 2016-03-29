@@ -3,8 +3,12 @@
 #include "cfg.h" // read config file
 #include "actions.h" // actions
 
+#ifndef CFG_FILE
+#define CFG_FILE "./config.json"
+#endif
+
 /* Main program:
-  - expects at least one argument with an action
+  - expects at least one argument - action
   - run the action
   - catch exceptions, print json output, close databases etc.
 */
@@ -15,7 +19,7 @@ main(int argc, char **argv){
   try {
     if (argc<2) throw Err("eventdb") << "Action is not specified";
     std::string action(argv[1]);
-    CFG cfg; /* read parameters from the config file */
+    CFG cfg(CFG_FILE); /* read parameters from the config file */
 
     if      (action == "login")     do_login(cfg, argc-1, argv+1); 
     else if (action == "logout")    do_logout(cfg, argc-1, argv+1);

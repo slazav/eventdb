@@ -8,7 +8,6 @@
 #include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
 #include <netdb.h> /* struct hostent, gethostbyname */
 #include <openssl/md5.h>
-#include "json.h"
 #include "login.h"
 
 using namespace std;
@@ -112,18 +111,18 @@ string get_provider(const string identity){
 /* Convert login information from string to standard json.
  * (original information can be different for different providers).
  */
-json_t *
+json::Value
 parse_login_data(const string & juser){
 
   /* convert string to json */
-  json_t * root = j_loadstr(juser);
+  json::Value root = JsonDB::str2json(juser);
 
   /* if loginza returned an error - throw it */
-  if (j_getstr(root, "error_message", "")!="")
+  if (root.get("error_message").is_undefined())
     throw Exc() << juser;
 
   /* get identity field */
-  std::string identity = j_getstr(root, "identity");
+  std::string identity = JsonDB::json_getstr(root, "identity");
 
   /* default full_name and alias */
   std::string full_name, alias;
@@ -133,10 +132,10 @@ parse_login_data(const string & juser){
   std::string provider = get_provider(identity);
 
   /* parse the name if possible and make correct full name and alias */
-  json_t *name = json_object_get(root, "name");
-  if (json_is_object(name)){
-    string n1 = j_getstr(name, "first_name", "");
-    string n2 = j_getstr(name, "last_name", "");
+  const json::Value nn = root.getv("name");
+  if (nn.is_object()){
+    string n1 = JsonDB::json_getstr(nn, "first_name", "");
+    string n2 = JsonDB::json_getstr(nn, "last_name", "");
 
     if (n1!="" && n2!="") { full_name = n1+" "+n2; alias = n1+n2; }
     else if (n1!="")  alias = full_name = n1;
@@ -151,16 +150,14 @@ parse_login_data(const string & juser){
     full_name = identity.substr(i1+7, i2-i1-7);
     alias     = full_name + "@lj";
   }
-  json_decref(root);
 
   /* build the output json */
-  root = j_mkobj();
-  j_putstr(root, "identity",  identity);
-  j_putstr(root, "provider",  provider);
-  j_putstr(root, "full_name", full_name);
-  j_putstr(root, "alias",     alias);
-
-  return root;
+  json::Value ret(json::object());
+  ret.set_key("identity",  json::Value(identity));
+  ret.set_key("provider",  json::Value(provider));
+  ret.set_key("full_name", json::Value(full_name));
+  ret.set_key("alias",     json::Value(alias));
+  return ret;
 }
 
 /* string with current date and time */
@@ -177,7 +174,7 @@ time_str(){
 }
 
 /* get login data and create standard json object */
-json_t *
+json::Value
 get_login_info(const CFG & cfg, const char *tok){
 
   /* get user login information: test_users or loginza */
@@ -189,12 +186,14 @@ get_login_info(const CFG & cfg, const char *tok){
     juser = ask_loginza(tok,
       cfg.loginza_sec.c_str(), cfg.loginza_sec.c_str());
   }
+
+  /* fill token with 0 */
+  memset(tok, 0, strlen(tok));
+
   /* log the information */
   ofstream out((cfg.logsdir + "/login.txt").c_str(), ios::app);
   out << time_str() << " " << juser << std::endl;
 
   /* parse json string from loginza and fill user information */
-  json_t *root = parse_login_data(juser);
-
-  return root;
+  return parse_login_data(juser);
 }

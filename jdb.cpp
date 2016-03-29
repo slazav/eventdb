@@ -42,7 +42,7 @@ jbd_get_keyname(DB* dbp){
 /* secondary key extractor */
 int
 jbd_key_extractor(DB *secdb, const DBT *pkey, const DBT *pdata, DBT *skey){
-  json_t * root = j_loadstr((const char *)pdata->data);
+  json::json_t * root = j_loadstr((const char *)pdata->data);
   std::string k = jbd_get_keyname(secdb);
   std::string v = j_getstr(root, k);
   json_decref(root);
@@ -129,7 +129,7 @@ JDB::exists(const std::string & skey){
 }
 
 void
-JDB::put(json_t * json, bool overwrite){
+JDB::put(json::json_t * json, bool overwrite){
   /* field key_name is not needed*/
   std::string skey_name = jbd_get_keyname(dbp);
   std::string skey = j_getstr(json, skey_name);
@@ -145,7 +145,7 @@ JDB::put(json_t * json, bool overwrite){
   free(sval);
 }
 
-json_t *
+json::json_t *
 JDB::get(const std::string & skey){
   int ret;
   DBT key  = mk_dbt(skey);
@@ -154,7 +154,7 @@ JDB::get(const std::string & skey){
     DBT val = mk_dbt();
     ret = dbp->get(dbp, NULL, &key, &val, 0);
     if (ret != 0) throw Err() << name << " database: " << db_strerror(ret);
-    json_t * root = j_loadstr((const char *)val.data);
+    json::json_t * root = j_loadstr((const char *)val.data);
     /* add primary key to json */
     j_putstr(root, jbd_get_keyname(dbp), skey);
     return root;
@@ -164,7 +164,7 @@ JDB::get(const std::string & skey){
     DBT pval = mk_dbt();
     ret = dbp->pget(dbp, NULL, &key, &pkey, &pval, 0);
     if (ret != 0) throw Err() << name << " database: " << db_strerror(ret);
-    json_t * root = j_loadstr((const char *)pval.data);
+    json::json_t * root = j_loadstr((const char *)pval.data);
     /* add primary key to json */
     j_putstr(root, jbd_get_keyname(pdbp), (const char *)pkey.data);
     return root;

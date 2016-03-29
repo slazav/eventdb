@@ -1,12 +1,8 @@
-LDLIBS=-ldb -lcrypto
-#CFLAGS=-g
 
-eventdb:  dbs.o user.o event.o log.o link.o actions.o eventdb.o
+LDLIBS=./jansson/src/.libs/libjansson.a -lcrypto -ldb
+LDFLAGS=-L/usr/local/lib/db42 
+CPPFLAGS=-I./jansson/src -I/usr/local/include/db42 -g
 
-dbs.o user.o event.o geo.o: dbs.h
-actions.o: actions.h
-event.o link.o geo.o: event.h
+all: eventdb
 
-clean:
-	rm -f -- *.o eventdb
-
+eventdb: eventdb.cpp err.cpp json.cpp jdb.cpp login.cpp actions.cpp

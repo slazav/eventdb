@@ -7,9 +7,7 @@
 #include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
 #include <netdb.h> /* struct hostent, gethostbyname */
 #include <openssl/md5.h>
-#include "json.h"
 #include "login.h"
-#include "jdb.h"
 #include "actions.h"
 
 using namespace std;
@@ -21,7 +19,7 @@ check_args(const int argc, const int n){
     throw Err() << "wrong number of arguments, should be " << n;
 }
 /* get secret (login token or session id) from stdin */
-std::string
+string
 get_secret(){
   string s;
   cin >> s;
@@ -29,6 +27,44 @@ get_secret(){
   return s;
 }
 
+/* create random session id */
+std::string make_session(){
+  std::string session(25, ' ');
+  static const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for (int i = 0; i < session.length(); ++i)
+  session[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+  return session;
+}
+
+
+/********************************************************************/
+// user database
+//  identity -> (name, alias, abbr, session, stime)
+//  secondary: sessions aliases
+
+class UserDB : public JsonDB{
+  UserDB(const CFG & cfg, const int flags=0): JsonDB(cfg.datadir + "/user", flags){
+    open_sec("session", false);
+    open_sec("alias", false);
+  }
+  json::Value get_by_session(const std::string & sess, std::string & id){
+    if (sess == ""){
+      json::Value ret(json::object());
+      ret.set_key("identity", "");
+      ret.set_key("name",     "");
+      ret.set_key("alias",    "");
+      ret.set_key("level",    "anon");
+      ret.set_key("session",  "");
+      ret.set_key("stime",    0);
+      return ret;
+    }
+    json::Value ret = get_sec("session", sess);
+    json::Iterator i(ret);
+    if (!i.valid()) throw Err() << "login error";
+    id = ret.key();
+    return ret.value().as_string();
+  }
+};
 
 /********************************************************************/
 /** Actions
@@ -41,38 +77,37 @@ do_login(const CFG & cfg, int argc, char **argv){
   string token = get_secret(); // read login token from stdin
 
   /* get user login information (from loginza of cfg file) */
-  json_t *userl = get_login_info(cfg, token.c_str());
+  json::Value *userl = get_login_info(cfg, token.c_str());
 
   /* extract user identity */
-  std::string id = j_getstr(userl, "identity");
+  string id = JsonDB::json_getstr(userl, "identity");
 
   /* update user information from the database */
-  UserDB user_db(cfg, DB_CREATE);
-  json_t *userdb =  user_db.get_by_id(id);
-  if (userdb){
+  UserDB udb(cfg, DB_CREATE);
+
+  if (udb.exists(id)){
     /* known user: get level, alias, abbr from DB */
-    j_putstr(userl, "level", j_getstr(userdb, "level"));
-    j_putstr(userl, "alias", j_getstr(userdb, "alias"));
-    j_putstr(userl, "abbr",  j_getstr(userdb, "abbr"));
+    json::Value userd = udb.get(id);
+    userl.set_key("level", userd.getv("level"));
+    userl.set_key("alias", userd.getv("alias"));
+    userl.set_key("abbr",  userd.getv("abbr"));
   }
   else{
     /* new user: for the very first user level="admin" */
-    j_putstr(userl, "level", user_db.is_empty()? "admin":"norm");
-    j_putstr(userl, "abbr", "");
+    userl.set_key("level", udb.is_empty()? "admin":"norm");
+    userl.set_key("abbr", "");
   }
-  json_decref(userdb);
 
   /* Create new session */
-  j_putstr(userl, "session", user_db.make_session());
+  userl.set_key("session", json::Value(make_session()));
+  userl.set_key("stime",   json::Value(time(NULL)));
 
   /* Write user to the database */
-  user_db.put(userl);
+  udb.put(id, userl);
 
   /* return user information */
-  throw Exc() << j_dumpstr(userl);
+  throw Exc() << userl.save_string();
 }
-
-
 
 /********************************************************************/
 void
@@ -81,17 +116,15 @@ do_logout(const CFG & cfg, int argc, char **argv){
   check_args(argc, 0);
 
   /* read session id from stdin*/
-  string s;
-  cin >> s;
-  if (!cin.good()) throw Err() << "session id expected";
-  UserDB user_db(cfg);
-  json_t * user = user_db.get_by_session(s);
-  if (!user) throw Err() << "unknown session id";
+  UserDB udb(cfg);
+  std::string id;
+  json::Value user = udb.get_by_session(get_secret(), id);
 
   /* remove session */
-  j_putstr(user, "session", "");
+  user.set_key("session", "");
+  user.set_key("stime",    0);
   /* Write user to the database */
-  user_db.put(user);
+  udb.put(user);
 
   throw Exc() << j_dumpstr(user);
 }
