@@ -111,18 +111,19 @@ string get_provider(const string identity){
 /* Convert login information from string to standard json.
  * (original information can be different for different providers).
  */
-json::Value
+Json
 parse_login_data(const string & juser){
 
   /* convert string to json */
-  json::Value root = JsonDB::str2json(juser);
+  Json root = Json::load_string(juser);
 
   /* if loginza returned an error - throw it */
-  if (root.get("error_message").is_undefined())
+  if (!root.get("error_message").is_null())
     throw Exc() << juser;
 
   /* get identity field */
-  std::string identity = JsonDB::json_getstr(root, "identity");
+  std::string identity = root["identity"].as_string();
+  if (identity == "") throw Err() << "login error";
 
   /* default full_name and alias */
   std::string full_name, alias;
@@ -132,10 +133,10 @@ parse_login_data(const string & juser){
   std::string provider = get_provider(identity);
 
   /* parse the name if possible and make correct full name and alias */
-  const json::Value nn = root.getv("name");
+  Json nn = root["name"];
   if (nn.is_object()){
-    string n1 = JsonDB::json_getstr(nn, "first_name", "");
-    string n2 = JsonDB::json_getstr(nn, "last_name", "");
+    string n1 = nn["first_name"].as_string();
+    string n2 = nn["last_name"].as_string();
 
     if (n1!="" && n2!="") { full_name = n1+" "+n2; alias = n1+n2; }
     else if (n1!="")  alias = full_name = n1;
@@ -152,11 +153,11 @@ parse_login_data(const string & juser){
   }
 
   /* build the output json */
-  json::Value ret(json::object());
-  ret.set_key("identity",  json::Value(identity));
-  ret.set_key("provider",  json::Value(provider));
-  ret.set_key("full_name", json::Value(full_name));
-  ret.set_key("alias",     json::Value(alias));
+  Json ret = Json::object();
+  ret.set("identity",  Json(identity));
+  ret.set("provider",  Json(provider));
+  ret.set("full_name", Json(full_name));
+  ret.set("alias",     Json(alias));
   return ret;
 }
 
@@ -174,11 +175,12 @@ time_str(){
 }
 
 /* get login data and create standard json object */
-json::Value
+Json
 get_login_info(const CFG & cfg, const char *tok){
 
   /* get user login information: test_users or loginza */
   string juser;
+
   if (cfg.test_users.find(tok)!=cfg.test_users.end()){
     juser = cfg.test_users.find(tok)->second;
   }
@@ -186,9 +188,6 @@ get_login_info(const CFG & cfg, const char *tok){
     juser = ask_loginza(tok,
       cfg.loginza_sec.c_str(), cfg.loginza_sec.c_str());
   }
-
-  /* fill token with 0 */
-  memset(tok, 0, strlen(tok));
 
   /* log the information */
   ofstream out((cfg.logsdir + "/login.txt").c_str(), ios::app);

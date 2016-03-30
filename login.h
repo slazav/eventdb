@@ -2,7 +2,7 @@
 #define LOGIN_H
 
 #include "cfg.h"
-#include "jsondb/jsondb.hpp"
+#include "jsonxx/jsonxx.h"
 
 /* json_t *get_login_info(const CFG & cfg, const char *tok);
  *
@@ -21,10 +21,8 @@
  * The object should be freed after use.
  *
  * Login information is also saved in the log file ($logsdir/login.log).
- * Token is filled with 0 after use.
  */
 
-json::Value
-get_login_info(const CFG & cfg, const char *token);
+Json get_login_info(const CFG & cfg, const char *token);
 
 #endif

@@ -5,4 +5,7 @@ CPPFLAGS=-I./jansson/src -I/usr/local/include/db42 -g
 
 all: eventdb
 
-eventdb: eventdb.cpp err.cpp json.cpp jdb.cpp login.cpp actions.cpp
+eventdb: eventdb.cpp err.cpp login.cpp actions.cpp jsondb/jsondb.cpp
+
+clean:
+	rm -f eventdb

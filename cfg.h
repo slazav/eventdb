@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 #include "err.h"
-#include "jsondb/jsondb.hpp"
+#include "jsonxx/jsonxx.h"
 
 /*
   Read config file CFG_FILE (json format).
@@ -28,19 +28,17 @@ public:
   /* constructor: read config file and set all fields */
   CFG(const char * cfg_file){
     Err("read_config");
-    json::Value root = JsonDB::file2json(cfg_file);
-    datadir = JsonDB::json_getstr(root, "datadir");
-    logsdir = JsonDB::json_getstr(root, "logsdir");
-    filedir = JsonDB::json_getstr(root, "filedir");
-    loginza_id  = JsonDB::json_getstr(root, "loginza_id");
-    loginza_sec = JsonDB::json_getstr(root, "loginza_sec");
+    Json root = Json::load_file(cfg_file);
+    datadir = root["datadir"].as_string();
+    logsdir = root["logsdir"].as_string();
+    filedir = root["filedir"].as_string();
+    loginza_id  = root["loginza_id"].as_string();
+    loginza_sec = root["loginza_sec"].as_string();
 
     /* test_users object */
-    json::Iterator i(root["test_users"]);
-    while (i.valid()) {
-      test_users[i.key()] = i.value().save_string();
-      i.next();
-    }
+    Json uu = root["test_users"];
+    for (Json::iterator i = uu.begin(); i!=uu.end(); i++)
+      test_users[i.key()] = i.val().save_string(JSON_PRESERVE_ORDER);
   }
 };
 
