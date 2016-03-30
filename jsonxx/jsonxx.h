@@ -70,29 +70,24 @@ class Json{
   /************************************/
   // constructors
   // use incref=true if you extract reference to the existing object
-  Json(json_t * json_=NULL, const bool incref=false):  json(json_) {
-      if (json==NULL) json = json_null(); // not a real NULL
+
+  private:
+    void create(json_t * json_=NULL, const bool incref=false){
+      json = (json_!=NULL) ? json_ : json_null();
       if (incref) json_incref(json);
       if (DEBUG_MEM && json)
         std::cerr << "C:" << (void *)json << " " << json->refcount << "\n";
-  }
+    }
+    Json(json_t * json_, const bool incref=false) { create(json_, incref); }
 
-  #ifdef STD11
-  Json(const char * v):        Json(json_string(v)) {}
-  Json(const std::string & v): Json(json_string(v.c_str())) {}
-  Json(const bool v):          Json(v?json_true():json_false()) {}
-  Json(const json_int_t v):    Json(json_integer(v)) {}
-  Json(const int v):           Json(json_integer(v)) {}
-  Json(const double v):        Json(json_real(v)) {}
-  #else
-  // here we can not see constructors using DEBUG_MEM
-  Json(const char * v)        { json = json_string(v); }
-  Json(const std::string & v) { json = json_string(v.c_str()); }
-  Json(const bool v)          { json = v?json_true():json_false(); }
-  Json(const json_int_t v)    { json = json_integer(v); }
-  Json(const int v)           { json = json_integer(v); }
-  Json(const double v)        { json = json_real(v); }
-  #endif
+  public:
+    Json() { create(); }
+    Json(const char * v)        { create(json_string(v)); }
+    Json(const std::string & v) { create(json_string(v.c_str())); }
+    Json(const bool v)          { create(v?json_true():json_false()); }
+    Json(const json_int_t v)    { create(json_integer(v)); }
+    Json(const int v)           { create(json_integer(v)); }
+    Json(const double v)        { create(json_real(v)); }
 
   /************************************/
   // static function for creating various types of json
@@ -182,7 +177,7 @@ class Json{
     }
     if (is_true())  return std::string("true");
     if (is_false()) return std::string("false");
-    if (is_object() || is_array()) 
+    // if (is_object() || is_array()) ...
     throw Err() << "can't cast to string";
     return std::string("");
   }
@@ -214,18 +209,21 @@ class Json{
   }
 
   /************************************/
-  // work with objects
-  // set field, exception on error
-  void set(const char *key, const Json & val){
-    if (json_object_set(json, key, val.json))
-      throw Err() << "json_object_set error"; }
+  // manipulating objects
 
-  // get field, NULL if no such field
+  // get field, return json_null if no such field
   Json get(const char *key) const{
     return Json(json_object_get(json, key), 1); }
 
   Json operator[](const char *key) const {
     return Json(json_object_get(json, key), 1); }
+
+
+  // set field, exception on error
+  void set(const char *key, const Json & val){
+    if (json_object_set(json, key, val.json))
+      throw Err() << "json_object_set error"; }
+
 
   // delete key from object, throw error if key not found
   void del(const char *key){
@@ -238,7 +236,8 @@ class Json{
   Json operator[](const std::string &key) const { return get(key.c_str()); }
   void del(const std::string &key){ del(key.c_str()); }
 
-  // update fields using another object, same for existing/missing fields
+  // update object all/existing/missing fields using
+  // another object, throw exception on errors
   void update(const Json & j){
     if (json_object_update(json, j.json))
       throw Err() << "object_update error"; }
@@ -274,15 +273,15 @@ class Json{
     return iterator(json); }
 
   /************************************/
-  // work with arrays
+  // manipulating arrays
 
-  // array get (returns NULL on error)
+  // array get (returns json_null on error)
   Json get(const size_t i) const{
     return Json(json_array_get(json,i), 1); }
   Json operator[](const size_t i) const {
     return Json(json_array_get(json, i), 1); }
 
-  // array set, del, insert, append (exception on error)
+  // array set, del, insert, append (throw exception on error)
   void set(const size_t i, const Json & val){
     if (json_array_set(json,i, val.json))
       throw Err() << "array_set error"; }
@@ -296,7 +295,7 @@ class Json{
     if (json_array_append(json, val.json))
       throw Err() << "array_append error"; }
 
-  // append another array
+  // append another array (throw exception on error)
   void extend(const Json & j){
     if (json_array_extend(json, j.json))
       throw Err() << "array_extend error"; }
