@@ -51,13 +51,11 @@ class JsonDB{
   // wrappers for throwing berkleydb errors from the class
   private:
     void _dberr(const std::string & s) const
-      { throw Err() << fname << ": " << s; }
+      { throw Err() << fname << ".db: " << s; }
     void _dberr(const int ret) const
-      { throw Err() << fname << ": " << db_strerror(ret); }
+      { throw Err() << fname << ".db: " << db_strerror(ret); }
     void _dberr(const int ret, const std::string &key) const
-      { throw Err() << fname << ", secondary key \"" << key << "\""
-                    << ": " << db_strerror(ret); }
-
+      { throw Err() << fname << "." << key << ".db: " << db_strerror(ret); }
 
   /************************************/
   // database handles, refcounter and memory menegement.
