@@ -125,7 +125,7 @@ JsonDB::JsonDB(const std::string & fname_,
                   NULL,          /* DB name */
                   DB_BTREE,      /* Database type (using btree) */
                   flags,         /* Open flags */
-                  0);            /* File mode. Using defaults */
+                  0600);            /* File mode. Using defaults */
   if (ret != 0) _dberr(ret);
 
   refcounter   = new int;
@@ -160,7 +160,7 @@ JsonDB::open_sec(const std::string & key,
                   NULL,          /* DB name in the file */
                   DB_BTREE,      /* Database type (using btree) */
                   flags,         /* Open flags */
-                  0);            /* File mode. Using defaults */
+                  0600);         /* */
   if (ret != 0) _dberr(ret, key);
 
   ret = sdbp->associate(dbp, NULL, sdbp, jsonbd_key_extractor, 0);
