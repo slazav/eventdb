@@ -41,7 +41,7 @@ int jsonbd_key_extractor(DB *secdb, const DBT *pkey, const DBT *pdata, DBT *skey
 typedef unsigned long long int ikey_t;
 
 /********************************************************************/
-/* create DBT objects */
+// create DBT objects
 DBT
 mk_dbt(){
   DBT ret;
@@ -72,8 +72,8 @@ mk_dbt(const std::string & str){
 
 
 /********************************************************************/
+// The main JsonDB class
 
-/* The main JsonDB class */
 class JsonDB{
 
   /************************************/
@@ -114,9 +114,12 @@ class JsonDB{
     int * refcounter;
 
     void copy(const JsonDB & other){
-      this->JsonDB::operator=(other);
-      //refcounter = other.refcounter;
-      //dbp = other.dbp;
+      dbp   = other.dbp;
+      fname = other.fname;
+      flags = other.flags;
+      intkeys = other.intkeys;
+      sec_dbp = other.sec_dbp;
+      refcounter = other.refcounter;
       (*refcounter)++;
       assert(*refcounter >0);
     }
