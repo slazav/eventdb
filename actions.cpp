@@ -53,7 +53,7 @@ std::string make_session(){
 
 /********************************************************************/
 // user database
-//  identity -> (name, alias, abbr, session, stime)
+//  identity -> (name, alias, session, stime)
 //  secondary: sessions aliases
 
 class UserDB : public JsonDB{
@@ -102,16 +102,14 @@ do_login(const CFG & cfg, int argc, char **argv){
   /* update user information from the database */
   UserDB udb(cfg, DB_CREATE);
   if (udb.exists(id)){
-    /* known user: get level, alias, abbr from DB */
+    /* known user: update level and alias from DB */
     Json userd = udb.get_json(id);
     userl.set("level", userd["level"].as_string());
     userl.set("alias", userd["alias"].as_string());
-    userl.set("abbr",  userd["abbr"].as_string());
   }
   else{
     /* new user: for the very first user level="admin" */
     userl.set("level", udb.is_empty()? "admin":"norm");
-    userl.set("abbr", "");
   }
 
   /* Create new session */
@@ -180,27 +178,6 @@ do_set_alias(const CFG & cfg, int argc, char **argv){
 
   user.set("alias", Json(alias)); // change alias
   udb.put_json(id,  Json(user)); // Write user to the database
-
-  throw Exc() << user.save_string(JSON_PRESERVE_ORDER);
-}
-
-/********************************************************************/
-void
-do_set_abbr(const CFG & cfg, int argc, char **argv){
-
-  Err("set_abbr");
-  check_args(argc, 1);
-  const char *abbr = argv[1];
-
-  /* get user information */
-  UserDB udb(cfg);
-  std::string id;
-  Json user = udb.get_by_session(get_secret(), id);
-  clr_secret();
-  if (!user) throw Err() << "login error";
-
-  user.set("abbr", abbr); // change abbr
-  udb.put_json(id, user); // Write user to the database
 
   throw Exc() << user.save_string(JSON_PRESERVE_ORDER);
 }

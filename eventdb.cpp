@@ -28,7 +28,6 @@ main(int argc, char **argv){
     else if (action == "logout")    do_logout(cfg, argc-1, argv+1);
     else if (action == "user_info") do_user_info(cfg, argc-1, argv+1);
     else if (action == "set_alias") do_set_alias(cfg, argc-1, argv+1);
-    else if (action == "set_abbr")  do_set_abbr(cfg, argc-1, argv+1);
     else throw Err("eventdb") << "Unknown action: " << action;
   }
   catch(Err e){
