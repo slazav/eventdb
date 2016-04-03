@@ -132,9 +132,9 @@ do_login(const CFG & cfg, int argc, char **argv){
 
 /********************************************************************/
 void
-do_user_info(const CFG & cfg, int argc, char **argv){
+do_my_info(const CFG & cfg, int argc, char **argv){
 
-  Err("user_info");        // set error type
+  Err("my_info");          // set error type
   check_args(argc, 0);     // check argument number
 
   /* get user information */
