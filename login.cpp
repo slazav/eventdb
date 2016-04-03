@@ -186,7 +186,7 @@ get_login_info(const CFG & cfg, const char *tok){
   }
   else{ /* loginza */
     juser = ask_loginza(tok,
-      cfg.loginza_sec.c_str(), cfg.loginza_sec.c_str());
+      cfg.loginza_id.c_str(), cfg.loginza_sec.c_str());
   }
 
   /* log the information */
