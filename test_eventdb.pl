@@ -58,7 +58,7 @@ run_test('user_info', $o3->{session}, '{"error_type": "jsondb", "error_message":
 run_test('user_info', $o4->{session}, '{"identity": "http://vk.com/id000000000", "provider": "vk", "full_name": "Test User", "alias": "TestUser@vk", "level": "norm", "session": "-", "stime": 1234567890}');
 
 # logout
-run_test('logout', $o2->{session}, '{"identity": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "provider": "fb", "full_name": "Test User", "alias": "TestUser@fb", "level": "norm", "session": "", "stime": 1234567890}');
+run_test('logout', $o2->{session}, '{"identity": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "provider": "fb", "full_name": "Test User", "alias": "TestUser@fb", "level": "norm", "stime": 1234567890}');
 run_test('user_info', $o2->{session}, '{"error_type": "jsondb", "error_message":"login error"}');
 
 # set alias
@@ -67,3 +67,7 @@ run_test('set_alias sla', $o1->{session}, '{"identity": "http://test.livejournal
 # aliases are unique (this also causes an error message from bercleydb to stderr)
 run_test('set_alias sla', $o4->{session}, '{"error_type": "jsondb", "error_message":"./data/user.db: Invalid argument"}');
 
+# logout
+run_test('user_info', $o1->{session}, '{"identity": "http://test.livejournal.com/", "provider": "lj", "full_name": "test", "alias": "sla", "level": "admin", "session": "-", "stime": 1234567890}');
+run_test('logout', $o1->{session}, '{"identity": "http://test.livejournal.com/", "provider": "lj", "full_name": "test", "alias": "sla", "level": "admin", "stime": 1234567890}');
+run_test('user_info', $o1->{session}, '{"error_type": "jsondb", "error_message":"login error"}');

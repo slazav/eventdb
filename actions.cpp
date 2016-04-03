@@ -161,7 +161,7 @@ do_logout(const CFG & cfg, int argc, char **argv){
   clr_secret();
   if (!user) throw Err() << "login error";
 
-  user.set("session", Json("")); // remove session
+  user.del("session"); // remove session
   user.set("stime",   Json((json_int_t)time(NULL)));
   udb.put_json(id, user); // Write user to the database
 
