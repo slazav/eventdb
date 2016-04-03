@@ -10,7 +10,9 @@
 #include "login.h"
 #include "actions.h"
 
+
 #include "jsondb/jsondb.h"
+
 
 using namespace std;
 
@@ -46,8 +48,13 @@ clr_secret(){ memset(sec_buf, 0, sizeof(sec_buf)); }
 std::string make_session(){
   std::string session(25, ' ');
   static const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  for (int i = 0; i < session.length(); ++i)
-  session[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+  for (int i = 0; i < session.length(); ++i){
+    #ifdef __FreeBSD__
+    session[i] = alphanum[arc4random_uniform(sizeof(alphanum))];
+    #else
+    session[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+    #endif
+  }
   return session;
 }
 
