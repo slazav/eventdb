@@ -218,6 +218,9 @@ class Json{
   Json operator[](const char *key) const {
     return Json(json_object_get(json, key), 1); }
 
+  // does the field exist
+  bool exists(const char *key) const{
+    return json_object_get(json, key) != NULL; }
 
   // set field, exception on error
   void set(const char *key, const Json & val){

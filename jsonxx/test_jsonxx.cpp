@@ -151,6 +151,17 @@ int main() {
     e8.set("k6", e6);
     e8.set("k7", e7);
 
+    ASSERT_TRUE(e8.exists("k0"), "exists(k0)");
+    ASSERT_TRUE(e8.exists("k1"), "exists(k1)");
+    ASSERT_TRUE(e8.exists("k2"), "exists(k2)");
+    ASSERT_TRUE(e8.exists("k3"), "exists(k3)");
+    ASSERT_TRUE(e8.exists("k4"), "exists(k4)");
+    ASSERT_TRUE(e8.exists("k5"), "exists(k5)");
+    ASSERT_TRUE(e8.exists("k6"), "exists(k6)");
+    ASSERT_TRUE(e8.exists("k7"), "exists(k7)");
+    ASSERT_FALSE(e8.exists(""),   "exists");
+    ASSERT_FALSE(e8.exists("k8"), "exists");
+
     ASSERT_EQ(e8.size(), 8,      "e8 has wrong size");
     ASSERT_EQ(e8["k0"].as_string(), "",     "e8[k0].as_string");
     ASSERT_EQ(e8["k1"].as_string(), "text", "e8[k1].as_string");
