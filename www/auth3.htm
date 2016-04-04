@@ -1,0 +1,96 @@
+<html>
+
+<head>
+
+<style>
+.user_alias, .user_level, .user_iden{
+  font-family: arial,sans-serif;
+  font-weight: bold;
+  text-decoration: none;
+}
+.user_ppic {
+  margin-bottom: -2px;
+}
+</style>
+
+<script>
+//
+var providers = 'livejournal,facebook,vkontakte,yandex,google';
+var evdb_url = 'http://slazav.mccme.ru/perl/auth3s.pl';
+var lgnz_url = 'https://loginza.ru/api/widget?token_url=' + evdb_url
+             + '&providers_set=' + providers;
+document.cookie = "RETPAGE=" + document.URL;
+
+// do eventdb request
+function do_request(action, callback){
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (xhttp.readyState == 4 && xhttp.status == 200) {
+      var data = JSON.parse(xhttp.responseText);
+      if (data.error_type){ process_err(data); }
+      else { callback(data);}
+    }
+  };
+  xhttp.open("GET", evdb_url + '?action=' + action
+                  + '&t=' + Math.random(), true);
+  xhttp.send();
+}
+
+// process error
+function process_err(data){
+  alert(data.error_type + ": " + data.error_message);
+}
+
+// fill user data
+function fill_login_form(my_info){
+  var lform = document.getElementById('login_box');
+  if (my_info.session && my_info.alias){
+    lform.innerHTML = '<span class=user_alias>' + my_info.alias + '</span> '
+       + '<input type="submit" value="выйти" '
+       + 'name="LogOut" onclick="do_logout()"/>'
+       + '<br><table border=0>'
+       + '<tr class=user_iden> <td>откуда:</td>'
+       +   '<td><a class=user_iden href="' + my_info.identity + '">'
+       +   '<img class=user_ppic src="' + get_prov_icon(my_info.provider)+ '"> '
+       +   my_info.full_name + '</td></tr>'
+       + '<tr class=user_level><td>уровень:</td>'
+       +   '<td> ' + my_info.level + '</td></tr>'
+       + '<tr class=user_alias><td>имя:</td><td> ' + my_info.alias
+       + '</table>';
+  }
+  else {
+    lform.innerHTML='<a href="' + lgnz_url + '">войти</a>';
+  }
+}
+
+function do_init(){
+  do_request('my_info', fill_login_form);
+}
+
+function do_logout(){
+  do_request('logout', fill_login_form);
+}
+
+function get_prov_icon(pr){
+  if (pr == 'vk') return 'https://vk.com/favicon.ico';
+  if (pr == 'lj') return 'http://l-stat.livejournal.net/img/userinfo.gif';
+  if (pr == 'fb') return 'https://www.facebook.com/favicon.ico';
+  if (pr == 'yandex') return 'https://yandex.st/lego/_/pDu9OWAQKB0s2J9IojKpiS_Eho.ico';
+  if (pr == 'google') return 'http://l-stat.livejournal.net/img/icons/google-16.png';
+                             // 'http://www.google.com/favicon.ico';
+                             // http://l-stat.livejournal.net/img/icons/facebook-16.png
+  return null;
+}
+</script>
+
+
+</head>
+
+<body>
+
+  <div align=right id=login_box></div>
+  <script> do_init() </script>
+  <hr>
+
+</body>
+</html>
