@@ -14,7 +14,8 @@
    global map to use the global extractor function. */
 std::map<DB*, std::string> jsondb_sec_keys;
 
-/* Universal key extractor: extracts string or array of strings from json object */
+/* Universal key extractor: extracts string or array of strings,
+or "id" fields in objects/arrays of objects from a json object */
 int jsonbd_key_extractor(DB *secdb, const DBT *pkey, const DBT *pdata, DBT *skey);
 
 /********************************************************************/
@@ -347,12 +348,13 @@ jsonbd_key_extractor(DB *secdb, const DBT *pkey,
     throw JsonDB::Err() << "No key name for the secondary database";
   std::string key_name = jsondb_sec_keys.find(secdb)->second;
 
-  // parse json, check that it is an object with key field
+  // parse json, check that there is an object with key field
   const Json jj(Json::load_string((const char *)pdata->data));
   if (!jj.is_object()) throw JsonDB::Err() << "can't parse json";
 
   Json jv = jj.get(key_name);
 
+  // null object: extract no entries
   if (jv.is_null()){
     skey->flags = DB_DBT_MULTIPLE;
     skey->data = NULL;
@@ -363,13 +365,29 @@ jsonbd_key_extractor(DB *secdb, const DBT *pkey,
   // collect all values into set of strings
   // note: bercleydb wants only unique keys here
   std::set<std::string> v;
+
+  // string:
   if (jv.is_string()){
     v.insert(jv.as_string());
   }
-  else if (jv.is_array()){
-    for (unsigned int i=0; i<jv.size(); i++) v.insert(jv[i].as_string());
+  // object with "id" field:
+  else if (jv.is_object() && jv.exists("id")
+           && jv.get("id").is_string()){
+    v.insert(jv.get("id").as_string());
   }
-  else throw JsonDB::Err() << "string or array expected: " << key_name;
+  // array:
+  else if (jv.is_array()){
+    for (unsigned int i=0; i<jv.size(); i++){
+      // string in the array element
+      if (jv[i].is_string())
+        v.insert(jv[i].as_string());
+      // object with "id" field in the array element
+      else if (jv[i].is_object() && jv[i].exists("id")
+               && jv[i].get("id").is_string())
+        v.insert(jv.get("id").as_string());
+    }
+  }
+  else throw JsonDB::Err() << "strings or objects with id field expected: " << key_name;
 
   // build the DBT output
   int n = v.size();

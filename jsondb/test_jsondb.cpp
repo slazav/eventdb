@@ -28,11 +28,11 @@ main() {
     const char * c1 = "{\"names\": [\"a\", \"b\", \"c\"], "
                       "\"unames\": [\"a1\", \"b1\"], "
                       "\"value\": 10}";
-    const char * c2 = "{\"names\": [\"d\", \"d\", \"c\"], "
+    const char * c2 = "{\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], "
                       "\"unames\": \"a2\", "
                       "\"value\": 10}";
     const char * c3 = "{\"names\": \"a\", "
-                      "\"unames\": [\"a3\"], "
+                      "\"unames\": {\"id\": \"a3\"}, "
                       "\"value\": 30}";
     const char * c4 = "{\"unames\": [\"a4\"], "
                       "\"value\": 40}";
@@ -123,10 +123,10 @@ main() {
       std::string resd  = (db.get_sec("names", "d")).save_string(JSON_PRESERVE_ORDER);
       std::string resa2 = (db.get_sec("unames", "a2")).save_string(JSON_PRESERVE_ORDER);
 
-      const char *expa = "{\"1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"4\": {\"names\": \"a\", \"unames\": [\"a3\"], \"value\": 30}}";
+      const char *expa = "{\"1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"4\": {\"names\": \"a\", \"unames\": {\"id\": \"a3\"}, \"value\": 30}}";
       const char *expb = "{\"1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}}";
-      const char *expc = "{\"1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"2\": {\"names\": [\"d\", \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}, \"6\": {\"names\": \"c\", \"unames\": [\"a5\"], \"value\": 50}}";
-      const char *expd = "{\"2\": {\"names\": [\"d\", \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}}";
+      const char *expc = "{\"1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"2\": {\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}, \"6\": {\"names\": \"c\", \"unames\": [\"a5\"], \"value\": 50}}";
+      const char *expd = "{\"2\": {\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}}";
 
       ASSERT_EQ(resa, expa, "find names == a");
       ASSERT_EQ(resb, expb, "find names == b");
@@ -243,10 +243,10 @@ main() {
       std::string resd  = (db.get_sec("names", "d")).save_string(JSON_PRESERVE_ORDER);
       std::string resa2 = (db.get_sec("unames", "a2")).save_string(JSON_PRESERVE_ORDER);
 
-      const char *expa = "{\"e1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"e4\": {\"names\": \"a\", \"unames\": [\"a3\"], \"value\": 30}}";
+      const char *expa = "{\"e1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"e4\": {\"names\": \"a\", \"unames\": {\"id\": \"a3\"}, \"value\": 30}}";
       const char *expb = "{\"e1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}}";
-      const char *expc = "{\"e1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"e2\": {\"names\": [\"d\", \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}, \"e6\": {\"names\": \"c\", \"unames\": [\"a5\"], \"value\": 50}}";
-      const char *expd = "{\"e2\": {\"names\": [\"d\", \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}}";
+      const char *expc = "{\"e1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"e2\": {\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}, \"e6\": {\"names\": \"c\", \"unames\": [\"a5\"], \"value\": 50}}";
+      const char *expd = "{\"e2\": {\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}}";
 
       ASSERT_EQ(resa, expa, "find names == a");
       ASSERT_EQ(resb, expb, "find names == b");
