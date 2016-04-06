@@ -7,9 +7,14 @@
   Actions.
 */
 
-void do_login(const CFG & cfg, int argc, char **argv);
-void do_my_info(const CFG & cfg, int argc, char **argv);
-void do_logout(const CFG & cfg, int argc, char **argv);
-void do_set_alias(const CFG & cfg, int argc, char **argv);
+/* Standard action arguments: CFG, argc, argv */
+typedef void(action_func)(const CFG &, int, char **);
+
+action_func do_login,
+            do_my_info,
+            do_logout,
+            do_set_alias,
+            do_set_level,
+            do_user_list;
 
 #endif

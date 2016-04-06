@@ -22,7 +22,7 @@ if ($action eq ''){
   my $data  = decode_json($out);
   $session = $data->{session} || '';
   $cookie = cookie(-name=>'SESSION', -value=>$session,
-                   -expires=>'+1y', -domain=>'slazav.mccme.ru') if $session;
+                   -expires=>'+1y', -host=>'slazav.mccme.ru') if $session;
   if ($ret){
     print redirect (-uri=>$ret, -cookie=>$cookie);
     exit 0;
@@ -32,7 +32,7 @@ if ($action eq ''){
 elsif ($action eq 'logout'){
   $out=qx(printf "%s" "$session" | $evdb_prog $action 2>/dev/null) || '';
   $cookie = cookie(-name=>'SESSION',
-                   -expires=>'-1s', -domain=>'slazav.mccme.ru');
+                   -expires=>'-1s', -host=>'slazav.mccme.ru');
 }
 
 else {
