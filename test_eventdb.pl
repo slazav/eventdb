@@ -63,7 +63,7 @@ run_test('my_info', $o4->{session}, '{"identity": "http://vk.com/id000000000", "
 run_test('my_info', "",  '{"identity": "anon", "alias": "anon", "level": "anon", "session": "", "stime": 1234567890}');
 
 # logout
-run_test('logout', $o2->{session}, '{"identity": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "provider": "fb", "full_name": "Test User", "alias": "TestUser@fb", "level": "norm", "stime": 1234567890}');
+run_test('logout', $o2->{session}, '{"identity": "anon", "alias": "anon", "level": "anon", "session": "", "stime": 1234567890}');
 run_test('my_info', $o2->{session}, '{"error_type":"my_info","error_message":"authentication error"}');
 
 # set alias
@@ -74,5 +74,5 @@ run_test('set_alias sla', $o4->{session}, '{"error_type": "jsondb", "error_messa
 
 # logout
 run_test('my_info', $o1->{session}, '{"identity": "http://test.livejournal.com/", "provider": "lj", "full_name": "test", "alias": "sla", "level": "admin", "session": "-", "stime": 1234567890}');
-run_test('logout', $o1->{session}, '{"identity": "http://test.livejournal.com/", "provider": "lj", "full_name": "test", "alias": "sla", "level": "admin", "stime": 1234567890}');
+run_test('logout', $o1->{session}, '{"identity": "anon", "alias": "anon", "level": "anon", "session": "", "stime": 1234567890}');
 run_test('my_info', $o1->{session}, '{"error_type":"my_info","error_message":"authentication error"}');

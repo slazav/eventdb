@@ -173,7 +173,7 @@ do_logout(const CFG & cfg, int argc, char **argv){
   user.set("stime",   Json((json_int_t)time(NULL)));
   udb.put_json(id, user); // Write user to the database
 
-  throw Exc() << user.save_string(JSON_PRESERVE_ORDER);
+  throw Exc() << get_anon().save_string(JSON_PRESERVE_ORDER);
 }
 
 /********************************************************************/
