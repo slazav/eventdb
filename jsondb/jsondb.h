@@ -45,7 +45,8 @@ class JsonDB{
       std::string json() const {
         return std::string("{\"error_type\": \"jsondb\", ") +
                             "\"error_message\":\"" + s.str() + "\"}"; }
-      std::string str() const { return s.str(); }
+      std::string text()  const { return "jsondb error: " + s.str(); }
+      std::string str()   const { return s.str(); }
   };
 
   // wrappers for throwing berkleydb errors from the class

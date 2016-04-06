@@ -9,6 +9,7 @@
 #include <netdb.h> /* struct hostent, gethostbyname */
 #include <openssl/md5.h>
 #include "login.h"
+#include "log.h"
 
 using namespace std;
 
@@ -161,19 +162,6 @@ parse_login_data(const string & juser){
   return ret;
 }
 
-/* string with current date and time */
-string
-time_str(){
-  char tstr[25];
-  time_t lt;
-  time (&lt);
-  struct tm * t = localtime(&lt);
-  snprintf(tstr, sizeof(tstr), "%04d-%02d-%02d %02d:%02d:%02d",
-    t->tm_year+1900, t->tm_mon+1, t->tm_mday,
-    t->tm_hour, t->tm_min, t->tm_sec);
-  return string(tstr);
-}
-
 /* get login data and create standard json object */
 Json
 get_login_info(const CFG & cfg, const char *tok){
@@ -190,8 +178,7 @@ get_login_info(const CFG & cfg, const char *tok){
   }
 
   /* log the information */
-  ofstream out((cfg.logsdir + "/login.txt").c_str(), ios::app);
-  out << time_str() << " " << juser << std::endl;
+  log(cfg.logfile, "login: " + juser);
 
   /* parse json string from loginza and fill user information */
   return parse_login_data(juser);

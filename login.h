@@ -2,6 +2,7 @@
 #define LOGIN_H
 
 #include "cfg.h"
+#include "err.h"
 #include "jsonxx/jsonxx.h"
 
 /* json_t *get_login_info(const CFG & cfg, const char *tok);

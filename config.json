@@ -1,6 +1,6 @@
 {
   "datadir": "./data",
-  "logsdir": "./logs",
+  "logfile": "./data/log.txt",
   "filedir": "./file",
   "loginza_id":  "",
   "loginza_sec": "",

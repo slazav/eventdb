@@ -39,6 +39,8 @@ public:
   std::string json() const {
     return std::string("{\"error_type\":\"") + t + "\"," +
                         "\"error_message\":\"" + s.str() + "\"}"; }
+  std::string text()  const { return t + " error: " + s.str(); }
+
   template <typename T>
   Err & operator<<(const T & o){ s << o; return *this; }
 };
@@ -50,6 +52,7 @@ public:
   Exc() {}
   Exc(const Exc & o) { s << o.s.str(); }
   std::string json()  const { return s.str(); }
+  std::string text()  const { return s.str(); }
   template <typename T>
   Exc & operator<<(const T & o){ s << o; return *this; }
 };

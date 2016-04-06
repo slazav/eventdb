@@ -29,9 +29,10 @@ class Json{
         template <typename T>
         Err & operator<<(const T & o){ s << o; return *this; }
         std::string json() const {
-          return std::string("{\"error_type\": \"json\", ") +
+          return std::string("{\"error_type\": \"jsonxx\", ") +
                               "\"error_message\":\"" + s.str() + "\"}"; }
-        std::string str() const { return s.str(); }
+        std::string text() const { return "jsonxx error: " + s.str(); }
+        std::string str()  const { return s.str(); }
     };
 
   /************************************/
