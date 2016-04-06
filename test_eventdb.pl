@@ -41,7 +41,7 @@ run_test('set_alias',   '', '{"error_type":"set_alias","error_message":"wrong nu
 
 # empty db:
 run_test('my_info', "",  '{"identity": "anon", "alias": "anon", "level": "anon", "session": "", "stime": 1234567890}');
-run_test('my_info', "x", '{"error_type": "jsondb", "error_message":"./data/user.db: No such file or directory"}');
+run_test('my_info', "x", '{"error_type": "jsondb", "error_message":"user.db: No such file or directory"}');
 
 # login with bad token (connection to loginza needed)
 #run_test('login', 'xx', '{"error_type":"token_validation","error_message":"Invalid token value."}');
@@ -70,7 +70,7 @@ run_test('my_info', $o2->{session}, '{"error_type":"my_info","error_message":"au
 run_test('set_alias sla', $o1->{session}, '{"identity": "http://test.livejournal.com/", "provider": "lj", "full_name": "test", "alias": "sla", "level": "admin", "session": "-", "stime": 1234567890}');
 
 # aliases are unique (this also causes an error message from bercleydb to stderr)
-run_test('set_alias sla', $o4->{session}, '{"error_type": "jsondb", "error_message":"./data/user.db: Invalid argument"}');
+run_test('set_alias sla', $o4->{session}, '{"error_type": "jsondb", "error_message":"user.db: Invalid argument"}');
 
 # logout
 run_test('my_info', $o1->{session}, '{"identity": "http://test.livejournal.com/", "provider": "lj", "full_name": "test", "alias": "sla", "level": "admin", "session": "-", "stime": 1234567890}');

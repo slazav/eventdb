@@ -50,12 +50,15 @@ class JsonDB{
 
   // wrappers for throwing berkleydb errors from the class
   private:
+    std::string cut_fname(const std::string &s) const{
+      size_t n = s.rfind('/');
+      return n==std::string::npos? s : s.substr(n+1,s.length()); }
     void _dberr(const std::string & s) const
-      { throw Err() << fname << ".db: " << s; }
+      { throw Err() << cut_fname(fname) << ".db: " << s; }
     void _dberr(const int ret) const
-      { throw Err() << fname << ".db: " << db_strerror(ret); }
+      { throw Err() << cut_fname(fname) << ".db: " << db_strerror(ret); }
     void _dberr(const int ret, const std::string &key) const
-      { throw Err() << fname << "." << key << ".db: " << db_strerror(ret); }
+      { throw Err() << cut_fname(fname) << "." << key << ".db: " << db_strerror(ret); }
 
   /************************************/
   // database handles, refcounter and memory menegement.
