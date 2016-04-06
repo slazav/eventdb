@@ -78,6 +78,10 @@ class UserDB : public JsonDB{
     id = i.key();
     return i.val();
   }
+  bool alias_exists(const std::string & alias){
+    return get_sec("alias", alias).size()!=0;
+  }
+
 };
 
 Json
@@ -184,12 +188,29 @@ do_set_alias(const CFG & cfg, int argc, char **argv){
   check_args(argc, 1);
   const char *alias = argv[1];
 
+  // check symbols in the new alias:
+  #define MINALIAS 2
+  #define MAXALIAS 20
+  const char *accept =
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "0123456789_";
+  // @ is not here, but it exists in automatically created aliases
+  int n=strlen(alias);
+  if (n<MINALIAS) throw Err() << "too short alias";
+  if (n>MAXALIAS) throw Err() << "too long alias";
+  if (strspn(alias, accept)!=n)
+    throw Err() << "only letters, numbers and _ are allowed in alias";
+
   /* Get user information. Empty session is an error */
   UserDB udb(cfg);
   std::string id;
   Json user = udb.get_by_session(get_secret(), id);
   clr_secret();
   if (!user) throw Err() << "authentication error";
+
+  // check the new alias: does it exists?
+  if (udb.alias_exists(alias)) throw Err() << "alias exists";
 
   user.set("alias", Json(alias)); // change alias
   udb.put_json(id,  Json(user)); // Write user to the database

@@ -67,10 +67,13 @@ run_test('logout', $o2->{session}, '{"identity": "anon", "alias": "anon", "level
 run_test('my_info', $o2->{session}, '{"error_type":"my_info","error_message":"authentication error"}');
 
 # set alias
+run_test('set_alias s', $o1->{session}, '{"error_type":"set_alias","error_message":"too short alias"}');
+run_test('set_alias sssssssssssssssssssss', $o1->{session}, '{"error_type":"set_alias","error_message":"too long alias"}');
+run_test('set_alias s@s', $o1->{session}, '{"error_type":"set_alias","error_message":"only letters, numbers and _ are allowed in alias"}');
 run_test('set_alias sla', $o1->{session}, '{"identity": "http://test.livejournal.com/", "provider": "lj", "full_name": "test", "alias": "sla", "level": "admin", "session": "-", "stime": 1234567890}');
 
-# aliases are unique (this also causes an error message from bercleydb to stderr)
-run_test('set_alias sla', $o4->{session}, '{"error_type": "jsondb", "error_message":"user.db: Invalid argument"}');
+# aliases are unique
+run_test('set_alias sla', $o4->{session}, '{"error_type":"set_alias","error_message":"alias exists"}');
 
 # logout
 run_test('my_info', $o1->{session}, '{"identity": "http://test.livejournal.com/", "provider": "lj", "full_name": "test", "alias": "sla", "level": "admin", "session": "-", "stime": 1234567890}');
