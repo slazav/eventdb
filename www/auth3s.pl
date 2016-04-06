@@ -17,7 +17,7 @@ my $out;
 my $cookie;
 
 if ($action eq ''){
-  $out=qx(printf "%s" "$token" | $evdb_prog login 2>&1) || '';
+  $out=qx(printf "%s" "$token" | $evdb_prog login 2>/dev/null) || '';
   # new session
   my $data  = decode_json($out);
   $session = $data->{session} || '';
@@ -30,23 +30,21 @@ if ($action eq ''){
 }
 
 elsif ($action eq 'logout'){
-  $out=qx(printf "%s" "$session" | $evdb_prog logout 2>&1) || '';
+  $out=qx(printf "%s" "$session" | $evdb_prog $action 2>/dev/null) || '';
   $cookie = cookie(-name=>'SESSION',
-                   -expires=>'-1y', -domain=>'slazav.mccme.ru');
+                   -expires=>'-1s', -domain=>'slazav.mccme.ru');
 }
 
-elsif ($action eq 'my_info'){
-  $out=qx(printf "%s" "$session" | $evdb_prog my_info 2>&1) || '';
-}
-
-else{
-  $out='{"error_type": "eventdb", "error_message": "Unknown action"}';
+else {
+  $out=qx(printf "%s" "$session" | $evdb_prog $action 2>/dev/null) || '';
 }
 
 if ($cookie){
-  print header (-type=>'application/json', -charset=>'utf-8', -cookie=>$cookie); }
+  print header (-type=>'application/json', -charset=>'utf-8', -cookie=>$cookie);
+}
 else{
-  print header (-type=>'application/json', -charset=>'utf-8'); }
+  print header (-type=>'application/json', -charset=>'utf-8');
+}
 
 print $out;
 
