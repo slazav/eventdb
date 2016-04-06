@@ -51,7 +51,7 @@ std::string make_session(){
   static const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   for (int i = 0; i < session.length(); ++i){
     #ifdef __FreeBSD__
-    session[i] = alphanum[arc4random_uniform(sizeof(alphanum))];
+    session[i] = alphanum[arc4random_uniform(sizeof(alphanum) - 1)];
     #else
     session[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
     #endif
