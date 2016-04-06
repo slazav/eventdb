@@ -21,28 +21,29 @@ using namespace std;
 // common functions
 
 // check argument number, throw exception if it is wrong
-void
-check_args(const int argc, const int n){
+void check_args(const int argc, const int n){
   if (argc!=n+1)
     throw Err() << "wrong number of arguments, should be " << n;
 }
 
+// secret buffer
+char sec_buf[1024];
+
+// fill secret buffer with zeros
+void clr_secret(){ memset(sec_buf, 0, sizeof(sec_buf)); }
+
 // get secret (login token or session id) from stdin
 // we want to use static buffer for the secret and clear it after use
-// (not goot to use std::string for secrets)
-char sec_buf[1024];
-char *
-get_secret(){
-  if (fgets(sec_buf, sizeof(sec_buf)-1, stdin) == NULL)
-    throw Err() << "can't get secret";
+// (not good to use std::string for secrets)
+char * get_secret(){
+  if (fgets(sec_buf, sizeof(sec_buf)-1, stdin) == NULL){
+    clr_secret();
+    return sec_buf;
+  }
   if (strlen(sec_buf)>0 && sec_buf[strlen(sec_buf)-1] == '\n')
     sec_buf[strlen(sec_buf)-1] = '\0'; // cut trailing '\n'
   return sec_buf;
 }
-
-// fill secret buffer with zeros
-void
-clr_secret(){ memset(sec_buf, 0, sizeof(sec_buf)); }
 
 // create random session id
 std::string make_session(){
@@ -71,23 +72,24 @@ class UserDB : public JsonDB{
     open_sec("alias", false);
   }
   Json get_by_session(const std::string & sess, std::string & id){
-    if (sess == ""){
-      Json ret = Json::object();
-      ret.set("identity", "anon");
-      ret.set("name",     "Anonimous");
-      ret.set("alias",    "anon");
-      ret.set("level",    "anon");
-      ret.set("session",  "");
-      ret.set("stime",    0);
-      return ret;
-    }
     Json ret = get_sec("session", sess);
-    if (ret.size()!=1) throw Err() << "login error";
+    if (ret.size()!=1) return Json::null();
     Json::iterator i = ret.begin();
     id = i.key();
     return i.val();
   }
 };
+
+Json
+get_anon(){
+  Json ret = Json::object();
+  ret.set("identity", "anon");
+  ret.set("alias",    "anon");
+  ret.set("level",    "anon");
+  ret.set("session",  "");
+  ret.set("stime",    0);
+  return ret;
+}
 
 /********************************************************************/
 /** Actions
@@ -137,12 +139,18 @@ do_my_info(const CFG & cfg, int argc, char **argv){
   Err("my_info");          // set error type
   check_args(argc, 0);     // check argument number
 
-  /* get user information */
+  // Here an empty session is not an error.
+  // In this case there is no need for opening db,
+  // We just return an anonimous user
+  char *sess = get_secret();
+  if (strlen(sess)==0)
+    throw Exc() << get_anon().save_string(JSON_PRESERVE_ORDER);
+
   UserDB udb(cfg);
   std::string id;
-  Json user = udb.get_by_session(get_secret(), id);
+  Json user = udb.get_by_session(sess, id);
   clr_secret();
-  if (!user) throw Err() << "login error";
+  if (!user) throw Err() << "authentication error";
 
   throw Exc() << user.save_string(JSON_PRESERVE_ORDER);
 }
@@ -154,12 +162,12 @@ do_logout(const CFG & cfg, int argc, char **argv){
   Err("logout");
   check_args(argc, 0);
 
-  /* get user information */
+  /* Get user information. Empty session is an error */
   UserDB udb(cfg);
   std::string id;
   Json user = udb.get_by_session(get_secret(), id);
   clr_secret();
-  if (!user) throw Err() << "login error";
+  if (!user) throw Err() << "authentication error";
 
   user.del("session"); // remove session
   user.set("stime",   Json((json_int_t)time(NULL)));
@@ -176,12 +184,12 @@ do_set_alias(const CFG & cfg, int argc, char **argv){
   check_args(argc, 1);
   const char *alias = argv[1];
 
-  /* get user information */
+  /* Get user information. Empty session is an error */
   UserDB udb(cfg);
   std::string id;
   Json user = udb.get_by_session(get_secret(), id);
   clr_secret();
-  if (!user) throw Err() << "login error";
+  if (!user) throw Err() << "authentication error";
 
   user.set("alias", Json(alias)); // change alias
   udb.put_json(id,  Json(user)); // Write user to the database
