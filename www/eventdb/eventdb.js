@@ -34,6 +34,8 @@ function user_identity(user){
 // fill user data
 function update_user_info(my_info){
   var lform = document.getElementById('login_box');
+  var name_block = 'inline';
+  var list_block = 'inline';
   if (my_info.session && my_info.alias){
     lform.innerHTML = '<a href="user.htm"><span class="user_alias"></span></a> '
        + '<input type="submit" value="выйти" '
@@ -47,9 +49,20 @@ function update_user_info(my_info){
     a = document.getElementsByClassName('user_identity');
     for (var i=0; i < a.length; i++){
       a[i].innerHTML = user_identity(my_info); }
+
+    if (my_info.level<0) {list_block='none';}
+
   } else {
     lform.innerHTML='<a href="' + lgnz_url + '">войти</a>';
+    name_block = 'none';
+    list_block = 'none';
   }
+
+  a = document.getElementsByClassName('name_block');
+  for (var i=0; i < a.length; i++){ a[i].style.display=name_block; }
+  a = document.getElementsByClassName('list_block');
+  for (var i=0; i < a.length; i++){ a[i].style.display=list_block; }
+
 }
 
 

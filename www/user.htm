@@ -39,6 +39,7 @@
     }
   </script>
 
+  <span class="name_block" style="display:none">
   <p>Вы -- <span class="user_identity"></span>,
      в социальных сетях про вас известно все!
   <p>Ваше имя на этом сайте:
@@ -62,6 +63,7 @@
   <li>администратор -- может назначать и свергать модераторов,
   <li>самый главный -- пользователь с самыми высокими правами.
   </ul>
+  </span>
 
   <script>
     // print level form
@@ -136,11 +138,13 @@
     }
   </script>
 
+  <span class="list_block" style="display:none">
   <h4>Список пользователей</h4>
   <input type=submit name="sh_users" value="показать"
          onclick="sh_users()" id="user_button">
   <p><table style="display:none" id="user_table" cellpadding=5 cellspacing=0 border=1>
   </table>
+  </span>
 
   <script> do_init() </script>
 </body>
