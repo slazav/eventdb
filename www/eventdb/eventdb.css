@@ -1,0 +1,7 @@
+body { font-family: arial,sans-serif; }
+
+.main_menu, .user_fname, .user_alias, .user_rlevel, .user_level {
+  font-weight: bold;
+}
+.up { margin-bottom: -2px; }
+.nd { text-decoration: none; }

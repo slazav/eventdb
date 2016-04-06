@@ -1,8 +1,7 @@
 *.o
 eventdb
-push.sh
+sync
 
 jansson
 data
-logs
 file
