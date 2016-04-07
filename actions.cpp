@@ -64,10 +64,25 @@ string make_session(){
   return session;
 }
 
+// get anonimous user
+Json
+get_anon(){
+  Json ret = Json::object();
+  ret.set("identity", "anon");
+  ret.set("alias",    "anon");
+  ret.set("level",    LEVEL_ANON);
+  ret.set("session",  "");
+  ret.set("stime",    0);
+  return ret;
+}
+
 /********************************************************************/
 // user database
-//  identity -> (identity, name, alias, session, stime)
+//  identity -> {identity, full_name, provider // loginza information
+//               alias, level,                 // local information
+//               session, stime}               // session information
 //  secondary: sessions aliases
+/********************************************************************/
 
 class UserDB : public JsonDB{
   public:
@@ -90,19 +105,9 @@ class UserDB : public JsonDB{
   }
 };
 
-Json
-get_anon(){
-  Json ret = Json::object();
-  ret.set("identity", "anon");
-  ret.set("alias",    "anon");
-  ret.set("level",    LEVEL_ANON);
-  ret.set("session",  "");
-  ret.set("stime",    0);
-  return ret;
-}
 
 /********************************************************************/
-/** Actions
+// Actions
 /********************************************************************/
 void
 do_login(const CFG & cfg, int argc, char **argv){
@@ -256,7 +261,6 @@ do_set_level(const CFG & cfg, int argc, char **argv){
 }
 
 /********************************************************************/
-
 void
 do_user_list(const CFG & cfg, int argc, char **argv){
 
@@ -293,3 +297,90 @@ do_user_list(const CFG & cfg, int argc, char **argv){
 
   throw Exc() << ret.save_string(JSON_PRESERVE_ORDER);
 }
+
+/********************************************************************/
+// event database
+//  id -> {id, name, text, date1, date2,
+//         [people], [links], [tags]
+//         cuser, muser, ctime, mtime} // db information
+//  secondary: date1, date2
+//  people: array of strings ?
+//  tags:   array of strings ?
+//  links:  array of objects {ref, text, type, auth, tags}
+/********************************************************************/
+
+class EventDB : public JsonDB{
+  public:
+  EventDB(const CFG & cfg, const int flags=0):
+       JsonDB(cfg.datadir + "/event", true, flags){
+    open_sec("date1",  true);
+    open_sec("date2",  true);
+    open_sec("tags",   true);
+    open_sec("people", true);
+  }
+};
+
+// check date string YYYY-MM-DD
+bool check_date(const char * d){
+  if (strlen(d) != 10) return false;
+  for (int i=0; i<strlen(d); i++){
+    if ((i==5 || i==8) && d[i]!='-') return false;
+    if (i!=5 && i!=8 && (d[i]<'0' || d[i]>'9')) return false;
+  }
+  return true;
+}
+
+/********************************************************************/
+// Event-related actions
+/********************************************************************/
+void
+do_ev_new(const CFG & cfg, int argc, char **argv){
+  Err("ev_new");
+  check_args(argc, 1);
+  Json ev = Json::load_file(argv[1]);
+  if (!ev) throw Err() << "bad json input";
+
+  /* Get user information. Empty session is an error */
+  UserDB udb(cfg, DB_RDONLY);
+  Json user = udb.get_by_session(get_secret());
+  clr_secret();
+  if (!user) throw Err() << "authentication error";
+
+  // check user level
+  int level = user["level"].as_integer();
+  if (level<LEVEL_NORM) throw Err() << "user level is too low";
+
+  // check dates
+  std::string d1 = ev["date1"].as_string();
+  std::string d2 = ev["date2"].as_string();
+  if (d2 == "") d2=d1;
+  if (!check_date(d1.c_str())) throw Err() << "date1 is not in YYYY-MM-DD format";
+  if (!check_date(d2.c_str())) throw Err() << "date2 is not in YYYY-MM-DD format";
+
+  // check title
+
+
+}
+
+
+/********************************************************************/
+void
+do_ev_del(const CFG & cfg, int argc, char **argv){
+}
+
+/********************************************************************/
+void
+do_ev_edit(const CFG & cfg, int argc, char **argv){
+}
+
+/********************************************************************/
+void
+do_ev_show(const CFG & cfg, int argc, char **argv){
+}
+
+/********************************************************************/
+void
+do_ev_list(const CFG & cfg, int argc, char **argv){
+}
+
+/********************************************************************/

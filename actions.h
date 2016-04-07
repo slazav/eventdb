@@ -17,4 +17,10 @@ action_func do_login,
             do_set_level,
             do_user_list;
 
+action_func do_ev_new,
+            do_ev_del,
+            do_ev_edit,
+            do_ev_show,
+            do_ev_list;
+
 #endif
