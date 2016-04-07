@@ -26,9 +26,9 @@ function process_err(data){
 
 // print user identity
 function user_identity(user){
-  return '<b><a class="nd" href=">' + user.identity + '">'
-       + '<img  class="up" src="' + get_ppic(user.provider) + '">'
-       + '&nbsp;' + user.full_name + '</a></b>';
+  return '<b><a class="nd" href="' + user.identity + '">'
+       + get_ppic(user.provider) + '&nbsp;'
+       + user.full_name + '</a></b>';
 }
 
 // fill user data
@@ -82,12 +82,15 @@ function do_logout(){
 }
 
 function get_ppic(pr){
-  if (pr == 'vk') return 'http://slazav.mccme.ru/eventdb/vk.png';
-  if (pr == 'lj') return 'http://slazav.mccme.ru/eventdb/lj.gif';
-  if (pr == 'fb') return 'http://slazav.mccme.ru/eventdb/fb.png';
-  if (pr == 'yandex') return 'http://slazav.mccme.ru/eventdb/ya.png';
-  if (pr == 'google') return 'http://slazav.mccme.ru/eventdb/gp.png';
-  return null;
+  var a = '<img style="margin-bottom:-2px;" src="';
+  var b = '">';
+  if (pr == 'vk') return a + 'http://slazav.mccme.ru/eventdb/vk.png' + b;
+  if (pr == 'lj') return a + 'http://slazav.mccme.ru/eventdb/lj.gif' + b;
+  if (pr == 'fb') return a + 'http://slazav.mccme.ru/eventdb/fb.png' + b;
+  if (pr == 'yandex') return a + 'http://slazav.mccme.ru/eventdb/ya.png' + b;
+  if (pr == 'google') return a + 'http://slazav.mccme.ru/eventdb/go.png' + b;
+  if (pr == 'gplus')  return a + 'http://slazav.mccme.ru/eventdb/gp.png' + b;
+  return "";
 }
 
 function get_rlevel(l){

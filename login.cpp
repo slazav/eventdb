@@ -102,10 +102,11 @@ string ask_loginza(const char *tok,
 string get_provider(const string identity){
   if (identity.find("www.facebook.com") != string::npos) return string("fb");
   if (identity.find("www.google.com")   != string::npos) return string("google");
+  if (identity.find("plus.google.com")  != string::npos) return string("gplus");
   if (identity.find("openid.yandex.ru") != string::npos) return string("yandex");
   if (identity.find("vk.com")           != string::npos) return string("vk");
   if (identity.find("livejournal.com")  != string::npos) return string("lj");
-  return string();
+  return string("");
 }
 
 /********************************************************************/
