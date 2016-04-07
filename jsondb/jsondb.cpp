@@ -407,7 +407,7 @@ jsonbd_key_extractor(DB *secdb, const DBT *pkey,
       // object with "id" field in the array element
       else if (jv[i].is_object() && jv[i].exists("id")
                && jv[i].get("id").is_string())
-        v.insert(jv.get("id").as_string());
+        v.insert(jv[i].get("id").as_string());
     }
   }
   else throw JsonDB::Err() << "strings or objects with id field expected: " << key_name;
