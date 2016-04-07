@@ -310,7 +310,7 @@ JsonDB::get_all(){
 
 // get entries with the specified key-value pair as a json object
 Json
-JsonDB::get_sec(const std::string & key, const std::string & val){
+JsonDB::secondary_get(const std::string & key, const std::string & val){
 
   // get secondary database for the key
   if (sec_dbp.count(key)==0)
@@ -337,6 +337,29 @@ JsonDB::get_sec(const std::string & key, const std::string & val){
   curs->close(curs);
   return jj;
 }
+
+// check that there are any entries in the secondary db for key:value pair
+bool
+JsonDB::secondary_exists(const std::string & key, const std::string & val){
+  // get secondary database for the key
+  if (sec_dbp.count(key)==0)
+    _dberr(std::string("no secondary database for the key: ") + key);
+  DB *sdbp = sec_dbp[key];
+
+  DBC *curs;
+  DBT skey = mk_dbt(val);
+  DBT pkey = mk_dbt();
+  DBT pval = mk_dbt();
+  /* Get a cursor */
+  sdbp->cursor(sdbp, NULL, &curs, 0);
+  if (!curs) _dberr("can't get a cursor");
+  Json jj = Json::object();
+  int ret;
+  ret=curs->c_pget(curs, &skey, &pkey, &pval, DB_SET);
+  curs->close(curs);
+  return ret==0;
+}
+
 
 /******************************************************************************/
 int

@@ -117,11 +117,11 @@ main() {
       db.open_sec("names",  true);  // duplicated entries allowed
       db.open_sec("unames", false); // duplicated entries not allowed
 
-      std::string resa  = (db.get_sec("names", "a")).save_string(JSON_PRESERVE_ORDER);
-      std::string resb  = (db.get_sec("names", "b")).save_string(JSON_PRESERVE_ORDER);
-      std::string resc  = (db.get_sec("names", "c")).save_string(JSON_PRESERVE_ORDER);
-      std::string resd  = (db.get_sec("names", "d")).save_string(JSON_PRESERVE_ORDER);
-      std::string resa2 = (db.get_sec("unames", "a2")).save_string(JSON_PRESERVE_ORDER);
+      std::string resa  = (db.secondary_get("names", "a")).save_string(JSON_PRESERVE_ORDER);
+      std::string resb  = (db.secondary_get("names", "b")).save_string(JSON_PRESERVE_ORDER);
+      std::string resc  = (db.secondary_get("names", "c")).save_string(JSON_PRESERVE_ORDER);
+      std::string resd  = (db.secondary_get("names", "d")).save_string(JSON_PRESERVE_ORDER);
+      std::string resa2 = (db.secondary_get("unames", "a2")).save_string(JSON_PRESERVE_ORDER);
 
       const char *expa = "{\"1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"4\": {\"names\": \"a\", \"unames\": {\"id\": \"a3\"}, \"value\": 30}}";
       const char *expb = "{\"1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}}";
@@ -133,6 +133,11 @@ main() {
       ASSERT_EQ(resc, expc, "find names == c");
       ASSERT_EQ(resd, expd, "find names == d");
       ASSERT_EQ(resa2,expd, "find unames == a2");
+
+      ASSERT_TRUE(db.secondary_exists("names",   "a"), "secondary_exists - a");
+      ASSERT_TRUE(db.secondary_exists("unames", "a2"), "secondary_exists - a2");
+      ASSERT_FALSE(db.secondary_exists("names",   "z"), "secondary_exists - z");
+      ASSERT_FALSE(db.secondary_exists("unames", "z2"), "secondary_exists - z2");
     }
 
     // add log entry
@@ -237,11 +242,11 @@ main() {
       db.open_sec("names",  true);  // duplicated entries allowed
       db.open_sec("unames", false); // duplicated entries not allowed
 
-      std::string resa  = (db.get_sec("names", "a")).save_string(JSON_PRESERVE_ORDER);
-      std::string resb  = (db.get_sec("names", "b")).save_string(JSON_PRESERVE_ORDER);
-      std::string resc  = (db.get_sec("names", "c")).save_string(JSON_PRESERVE_ORDER);
-      std::string resd  = (db.get_sec("names", "d")).save_string(JSON_PRESERVE_ORDER);
-      std::string resa2 = (db.get_sec("unames", "a2")).save_string(JSON_PRESERVE_ORDER);
+      std::string resa  = (db.secondary_get("names", "a")).save_string(JSON_PRESERVE_ORDER);
+      std::string resb  = (db.secondary_get("names", "b")).save_string(JSON_PRESERVE_ORDER);
+      std::string resc  = (db.secondary_get("names", "c")).save_string(JSON_PRESERVE_ORDER);
+      std::string resd  = (db.secondary_get("names", "d")).save_string(JSON_PRESERVE_ORDER);
+      std::string resa2 = (db.secondary_get("unames", "a2")).save_string(JSON_PRESERVE_ORDER);
 
       const char *expa = "{\"e1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"e4\": {\"names\": \"a\", \"unames\": {\"id\": \"a3\"}, \"value\": 30}}";
       const char *expb = "{\"e1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}}";
@@ -253,6 +258,12 @@ main() {
       ASSERT_EQ(resc, expc, "find names == c");
       ASSERT_EQ(resd, expd, "find names == d");
       ASSERT_EQ(resa2,expd, "find unames == a2");
+
+      ASSERT_TRUE(db.secondary_exists("names",   "a"), "secondary_exists - a");
+      ASSERT_TRUE(db.secondary_exists("unames", "a2"), "secondary_exists - a2");
+      ASSERT_FALSE(db.secondary_exists("names",   "z"), "secondary_exists - z");
+      ASSERT_FALSE(db.secondary_exists("unames", "z2"), "secondary_exists - z2");
+
     }
 
   }

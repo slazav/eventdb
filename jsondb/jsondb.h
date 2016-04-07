@@ -156,10 +156,11 @@ class JsonDB{
   // get all the database entries as a json object
   Json get_all();
 
-  // get entries with the specified key-value pair as a json object
-  Json get_sec(const std::string & key, const std::string & val);
+  // get entries with the specified key:value pair as a json object
+  Json secondary_get(const std::string & key, const std::string & val);
+  // check that there are any entries in the secondary db for key:value pair
+  bool secondary_exists(const std::string & key, const std::string & val);
 
 };
-
 
 #endif
