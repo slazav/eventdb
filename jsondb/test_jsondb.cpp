@@ -44,8 +44,8 @@ main() {
     bool intkeys = true;
     {
       JsonDB db("test1", intkeys, DB_TRUNCATE | DB_CREATE); // open DB
-      db.open_sec("names",  true);  // duplicated entries allowed
-      db.open_sec("unames", false); // duplicated entries not allowed
+      db.secondary_open("names",  true);  // duplicated entries allowed
+      db.secondary_open("unames", false); // duplicated entries not allowed
 
       ASSERT_TRUE(db.is_empty(), "db is not empty!");
       Json j1 = Json::load_string(c1);
@@ -58,8 +58,8 @@ main() {
     // add more entries
     {
       JsonDB db("test1", intkeys); // open DB
-      db.open_sec("names",  true);  // duplicated entries allowed
-      db.open_sec("unames", false); // duplicated entries not allowed
+      db.secondary_open("names",  true);  // duplicated entries allowed
+      db.secondary_open("unames", false); // duplicated entries not allowed
 
       ASSERT_FALSE(db.is_empty(), "db is empty!");
       Json j3 = Json::load_string(c3);
@@ -136,8 +136,8 @@ main() {
     // check secondary dbs
     {
       JsonDB db("test1", intkeys, DB_RDONLY); // open DB
-      db.open_sec("names",  true);  // duplicated entries allowed
-      db.open_sec("unames", false); // duplicated entries not allowed
+      db.secondary_open("names",  true);  // duplicated entries allowed
+      db.secondary_open("unames", false); // duplicated entries not allowed
 
       std::string resa  = (db.secondary_get("names", "a")).save_string(JSON_PRESERVE_ORDER);
       std::string resb  = (db.secondary_get("names", "b")).save_string(JSON_PRESERVE_ORDER);
@@ -166,8 +166,8 @@ main() {
     // add log entry
     {
       JsonDB db("test1", intkeys); // open DB
-      db.open_sec("names",  true);  // duplicated entries allowed
-      db.open_sec("unames", false); // duplicated entries not allowed
+      db.secondary_open("names",  true);  // duplicated entries allowed
+      db.secondary_open("unames", false); // duplicated entries not allowed
       Json j1 = Json::load_string("{\"a\": \"string1\"}");
       Json j2 = Json::load_string("{\"a\": \"string1\"}");
       db.put_time(j1);
@@ -182,8 +182,8 @@ main() {
     intkeys = false;
     {
       JsonDB db("test1", intkeys, DB_TRUNCATE | DB_CREATE); // open DB
-      db.open_sec("names",  true);  // duplicated entries allowed
-      db.open_sec("unames", false); // duplicated entries not allowed
+      db.secondary_open("names",  true);  // duplicated entries allowed
+      db.secondary_open("unames", false); // duplicated entries not allowed
 
       ASSERT_TRUE(db.is_empty(), "db is not empty!");
       Json j1 = Json::load_string(c1);
@@ -197,8 +197,8 @@ main() {
     // add more entries
     {
       JsonDB db("test1", intkeys); // open DB
-      db.open_sec("names",  true);  // duplicated entries allowed
-      db.open_sec("unames", false); // duplicated entries not allowed
+      db.secondary_open("names",  true);  // duplicated entries allowed
+      db.secondary_open("unames", false); // duplicated entries not allowed
 
       ASSERT_FALSE(db.is_empty(), "db is empty!");
       Json j3 = Json::load_string(c3);
@@ -284,8 +284,8 @@ main() {
     // check secondary dbs
     {
       JsonDB db("test1", intkeys, DB_RDONLY); // open DB
-      db.open_sec("names",  true);  // duplicated entries allowed
-      db.open_sec("unames", false); // duplicated entries not allowed
+      db.secondary_open("names",  true);  // duplicated entries allowed
+      db.secondary_open("unames", false); // duplicated entries not allowed
 
       std::string resa  = (db.secondary_get("names", "a")).save_string(JSON_PRESERVE_ORDER);
       std::string resb  = (db.secondary_get("names", "b")).save_string(JSON_PRESERVE_ORDER);

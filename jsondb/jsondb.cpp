@@ -289,7 +289,7 @@ JsonDB::get_all(){
 /* Open a secondary database, associated with some key
    in json objects of the primary database. */
 void
-JsonDB::open_sec(const std::string & key, const bool dup){
+JsonDB::secondary_open(const std::string & key, const bool dup){
 
   /* Initialize the DB handle */
   DB * sdbp;

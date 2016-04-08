@@ -133,7 +133,7 @@ class JsonDB{
   /************************************/
   /* Open a secondary database, associated with some key
      in json objects of the primary database. */
-  void open_sec(const std::string & key, const bool dup = false);
+  void secondary_open(const std::string & key, const bool dup = false);
 
   // get entries with the specified key:value pair as a json array
   Json secondary_get(const std::string & key, const std::string & val);
