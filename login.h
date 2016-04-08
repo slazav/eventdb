@@ -14,14 +14,12 @@
  * - login information is asked from loginza.ru service.
  *   loginza secret and id should be in config file.
  *
- * Returned json_t object  contains following fields:
- * - identity (in URL form)
- * - provider (short name: lj, fb, google, etc.)
- * - alias -- default alias (used only when user is created)
- * - full_name -- user name
- * The object should be freed after use.
+ * Returned Json object  contains following fields:
+ * - id   -- user identity in URL form
+ * - site -- short provider name: lj, fb, google, etc.
+ * - name -- user name
  *
- * Login information is also saved in the log file ($logsdir/login.log).
+ * Login information is also saved in the log file.
  */
 
 Json get_login_info(const CFG & cfg, const char *token);

@@ -9,10 +9,7 @@
 #include <openssl/md5.h>
 #include "login.h"
 #include "actions.h"
-
-
 #include "jsondb/jsondb.h"
-
 
 using namespace std;
 
@@ -21,6 +18,9 @@ using namespace std;
 #define LEVEL_MODER  1
 #define LEVEL_ADMIN  2
 #define LEVEL_SUPER  3
+
+//#define JSON_OUT_FLAGS  (JSON_PRESERVE_ORDER | JSON_INDENT(2))
+#define JSON_OUT_FLAGS  JSON_PRESERVE_ORDER
 
 /********************************************************************/
 // common functions
@@ -68,40 +68,34 @@ string make_session(){
 Json
 get_anon(){
   Json ret = Json::object();
-  ret.set("identity", "anon");
   ret.set("alias",    "anon");
   ret.set("level",    LEVEL_ANON);
-  ret.set("session",  "");
-  ret.set("stime",    0);
   return ret;
 }
 
 /********************************************************************/
 // user database
-//  identity -> {identity, full_name, provider // loginza information
-//               alias, level,                 // local information
-//               session, stime}               // session information
-//  secondary: sessions aliases
+//  int id -> {faces: [ {id, name, site} ] // login information
+//             name, alias, level,        // local information
+//             session, stime}            // session information
+//  secondary: sessions aliases faces
 /********************************************************************/
 
 class UserDB : public JsonDB{
   public:
   UserDB(const CFG & cfg, const int flags=0):
-       JsonDB(cfg.datadir + "/user", false, flags){
-    open_sec("session", false);
-    open_sec("alias", false);
+       JsonDB(cfg.datadir + "/user", true, flags){
+    secondary_open("session", false);
+    secondary_open("alias", false);
+    secondary_open("faces", false);
   }
-  Json get_by_session(const string & sess){
-    Json ret = get_sec("session", sess);
-    if (ret.size()!=1) return Json::null();
-    Json::iterator i = ret.begin();
-    return i.val();
+  Json get_by_session(const string & s){
+    json_int_t i = 0;
+    return secondary_get("session", s)[i];
   }
-  bool alias_exists(const string & alias){
-    return get_sec("alias", alias).size()!=0;
-  }
-  void write(const Json & user){
-    put_json(user["identity"].as_string(), user);
+  Json get_by_face(const string & s){
+    json_int_t i = 0;
+    return secondary_get("faces", s)[i];
   }
 };
 
@@ -115,36 +109,61 @@ do_login(const CFG & cfg, int argc, char **argv){
   Err("login");                // set error type
   check_args(argc, 0);         // check argument number
 
-  /* get user login information (from loginza of cfg file) */
-  Json userl = get_login_info(cfg, get_secret());
+  /* get face information (from loginza of cfg file) */
+  Json face = get_login_info(cfg, get_secret());
   clr_secret();
 
   /* extract user identity */
-  string id = userl["identity"].as_string();
-  if (id=="") throw Err() << "login error";
+  string face_id = face["id"].as_string();
+  if (face_id=="") throw Err() << "login error";
 
-  /* update user information from the database */
+  /* Read user from database or create new one */
   UserDB udb(cfg, DB_CREATE);
-  if (udb.exists(id)){
-    /* known user: update level and alias from DB */
-    Json userd = udb.get_json(id);
-    userl.set("level", userd["level"].as_integer());
-    userl.set("alias", userd["alias"].as_string());
-  }
-  else{
-    /* new user: for the very first user level="admin" */
-    userl.set("level", udb.is_empty()? LEVEL_SUPER:LEVEL_NORM);
-  }
+  Json user=Json::object();
 
+  if (udb.secondary_exists("faces", face_id)){
+    /* known user: find the user with known face id */
+    user = udb.get_by_face(face_id);
+
+    /* replace the face (in case we have a changed name) */
+    for (int i=0; i<user["faces"].size(); i++){
+      if (user["faces"][i]["id"].as_string() == face_id)
+        user["faces"].set(i, face);
+    }
+  }
+  else{ /* new user */
+    user.set("id", -1); // negative id if we want to add new one
+    user.set("faces", Json::array());
+    user["faces"].append(face);
+
+    // auto level: for the very first user level="admin"
+    user.set("level", udb.is_empty()? LEVEL_SUPER:LEVEL_NORM);
+
+    // auto alias:
+    // first try an alias, derived from the name -- TODO!
+    string alias = face["name"].as_string();
+    // if alias exists try "user01", "user02", etc.
+    int num=1;
+    char nstr[5];
+    while (udb.secondary_exists("alias", alias)){
+      if (num>=100) throw Err() << "too large number in auto alias";
+      snprintf(nstr, sizeof(nstr), "%02d", num++);
+      alias = string("user") + nstr;
+    }
+    user.set("alias", alias);
+  }
   /* Create new session */
-  userl.set("session", Json(make_session()));
-  userl.set("stime",   Json((json_int_t)time(NULL)));
+  user.set("stime",   (json_int_t)time(NULL));
+  user.set("session", make_session());
+
+//  std::cerr << "> " <<
+//    user.save_string(JSON_PRESERVE_ORDER | JSON_INDENT(2)) << "\n";
 
   /* Write user to the database */
-  udb.write(userl);
+  udb.put(user);
 
   /* return user information */
-  throw Exc() << userl.save_string(JSON_PRESERVE_ORDER);
+  throw Exc() << user.save_string(JSON_OUT_FLAGS);
 }
 
 /********************************************************************/
@@ -159,14 +178,14 @@ do_my_info(const CFG & cfg, int argc, char **argv){
   // We just return an anonimous user
   char *sess = get_secret();
   if (strlen(sess)==0)
-    throw Exc() << get_anon().save_string(JSON_PRESERVE_ORDER);
+    throw Exc() << get_anon().save_string(JSON_OUT_FLAGS);
 
   UserDB udb(cfg, DB_RDONLY);
   Json user = udb.get_by_session(sess);
   clr_secret();
   if (!user) throw Err() << "authentication error";
 
-  throw Exc() << user.save_string(JSON_PRESERVE_ORDER);
+  throw Exc() << user.save_string(JSON_OUT_FLAGS);
 }
 
 /********************************************************************/
@@ -182,11 +201,11 @@ do_logout(const CFG & cfg, int argc, char **argv){
   clr_secret();
   if (!user) throw Err() << "authentication error";
 
+  user.set("stime",   (json_int_t)time(NULL));
   user.del("session"); // remove session
-  user.set("stime",   Json((json_int_t)time(NULL)));
-  udb.write(user);
+  udb.put(user);
 
-  throw Exc() << get_anon().save_string(JSON_PRESERVE_ORDER);
+  throw Exc() << get_anon().save_string(JSON_OUT_FLAGS);
 }
 
 /********************************************************************/
@@ -218,12 +237,12 @@ do_set_alias(const CFG & cfg, int argc, char **argv){
   if (!user) throw Err() << "authentication error";
 
   // check the new alias: does it exists?
-  if (udb.alias_exists(alias)) throw Err() << "alias exists";
+  if (udb.secondary_exists("alias", alias)) throw Err() << "alias exists";
 
-  user.set("alias", Json(alias)); // change alias
-  udb.write(user);
+  user.set("alias", alias); // change alias
+  udb.put(user);
 
-  throw Exc() << user.save_string(JSON_PRESERVE_ORDER);
+  throw Exc() << user.save_string(JSON_OUT_FLAGS);
 }
 
 /********************************************************************/
@@ -232,7 +251,7 @@ do_set_level(const CFG & cfg, int argc, char **argv){
 
   Err("set_level");
   check_args(argc, 2);
-  const char *id2  = argv[1];
+  const char *face2_id  = argv[1];
   int level = atoi(argv[2]);
 
   /* Get user information. Empty session is an error */
@@ -242,7 +261,7 @@ do_set_level(const CFG & cfg, int argc, char **argv){
   if (!user) throw Err() << "authentication error";
 
   /* user which we want to change */
-  Json user2 = udb.get_json(id2);
+  Json user2 = udb.get_by_face(face2_id);
   if (!user2) throw Err() << "no such user";
 
   // check permissions
@@ -251,13 +270,13 @@ do_set_level(const CFG & cfg, int argc, char **argv){
       level < LEVEL_ANON ||
       level > LEVEL_ADMIN) throw Err() << "bad level value";
 
-  user2.set("level", Json(level)); // change alias
-  udb.write(user2);
+  user2.set("level", level); // change alias
+  udb.put(user2);
 
   if (user2.exists("session")) user2.del("session");
   if (user2.exists("stime"))   user2.del("stime");
 
-  throw Exc() << user2.save_string(JSON_PRESERVE_ORDER);
+  throw Exc() << user2.save_string(JSON_OUT_FLAGS);
 }
 
 /********************************************************************/
@@ -275,27 +294,27 @@ do_user_list(const CFG & cfg, int argc, char **argv){
 
   // check user level
   int level = user["level"].as_integer();
-  if (level<LEVEL_NORM) throw Err() << "user level is too low";
+  if (level<LEVEL_MODER) throw Err() << "user level is too low";
 
   // all the user database
   Json ret = udb.get_all();
 
-  for (Json::iterator i=ret.begin(); i!=ret.end(); ++i){
+  for (size_t i = 0; i<ret.size(); i++){
     // remove session information
-    if (i.val().exists("session")) i.val().del("session");
-    if (i.val().exists("stime"))   i.val().del("stime");
+    if (ret[i].exists("session")) ret[i].del("session");
+    if (ret[i].exists("stime"))   ret[i].del("stime");
 
     // add level_hints: how can I change the level
-    int ln = (i.val())["level"].as_integer();
+    int ln = ret[i]["level"].as_integer();
     if (level>LEVEL_NORM && ln<level){
       Json level_hints = Json::array();
       for (int j=LEVEL_ANON; j<level; j++)
         level_hints.append(Json(j));
-      i.val().set("level_hints", level_hints);
+      ret[i].set("level_hints", level_hints);
     }
   }
 
-  throw Exc() << ret.save_string(JSON_PRESERVE_ORDER);
+  throw Exc() << ret.save_string(JSON_OUT_FLAGS);
 }
 
 /********************************************************************/
@@ -313,10 +332,10 @@ class EventDB : public JsonDB{
   public:
   EventDB(const CFG & cfg, const int flags=0):
        JsonDB(cfg.datadir + "/event", true, flags){
-    open_sec("date1",  true);
-    open_sec("date2",  true);
-    open_sec("tags",   true);
-    open_sec("people", true);
+    secondary_open("date1",  true);
+    secondary_open("date2",  true);
+    secondary_open("tags",   true);
+    secondary_open("people", true);
   }
 };
 

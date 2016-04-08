@@ -98,20 +98,20 @@ string ask_loginza(const char *tok,
 }
 
 /********************************************************************/
-/* extract provider from identity */
-string get_provider(const string identity){
-  if (identity.find("www.facebook.com") != string::npos) return string("fb");
-  if (identity.find("www.google.com")   != string::npos) return string("google");
-  if (identity.find("plus.google.com")  != string::npos) return string("gplus");
-  if (identity.find("openid.yandex.ru") != string::npos) return string("yandex");
-  if (identity.find("vk.com")           != string::npos) return string("vk");
-  if (identity.find("livejournal.com")  != string::npos) return string("lj");
+/* extract site from identity */
+string get_site(const string id){
+  if (id.find("www.facebook.com") != string::npos) return string("fb");
+  if (id.find("www.google.com")   != string::npos) return string("google");
+  if (id.find("plus.google.com")  != string::npos) return string("gplus");
+  if (id.find("openid.yandex.ru") != string::npos) return string("yandex");
+  if (id.find("vk.com")           != string::npos) return string("vk");
+  if (id.find("livejournal.com")  != string::npos) return string("lj");
   return string("");
 }
 
 /********************************************************************/
-/* Convert login information from string to standard json.
- * (original information can be different for different providers).
+/* Convert login information from string to standard json {id, name, site}.
+ * (original information can be different for different sites).
  */
 Json
 parse_login_data(const string & juser){
@@ -127,39 +127,36 @@ parse_login_data(const string & juser){
   std::string identity = root["identity"].as_string();
   if (identity == "") throw Err() << "login error";
 
-  /* default full_name and alias */
-  std::string full_name, alias;
-  full_name = alias = identity;
+  /* default name */
+  std::string name = identity;
 
-  /* extract provider */
-  std::string provider = get_provider(identity);
+  /* extract site */
+  std::string site = get_site(identity);
 
-  /* parse the name if possible and make correct full name and alias */
+  /* parse the name if possible and make correct full name */
   Json nn = root["name"];
   if (nn.is_object()){
     string n1 = nn["first_name"].as_string();
     string n2 = nn["last_name"].as_string();
-
-    if (n1!="" && n2!="") { full_name = n1+" "+n2; alias = n1+n2; }
-    else if (n1!="")  alias = full_name = n1;
-    else if (n2!="")  alias = full_name = n2;
-    alias += "@" + provider;
+    string n3 = nn["full_name"].as_string();
+    if (n3!="") name=n3;
+    else if (n1!="" && n2!="") name = n1+" "+n2;
+    else if (n2!="") name=n2;
+    else if (n1!="") name=n1;
   }
 
   /* lj has only identity */
-  if (provider == "lj"){
+  if (site == "lj"){
     size_t i1 = identity.find("http://");
     size_t i2 = identity.find(".livejournal.com");
-    full_name = identity.substr(i1+7, i2-i1-7);
-    alias     = full_name + "@lj";
+    name = identity.substr(i1+7, i2-i1-7);
   }
 
   /* build the output json */
   Json ret = Json::object();
-  ret.set("identity",  Json(identity));
-  ret.set("provider",  Json(provider));
-  ret.set("full_name", Json(full_name));
-  ret.set("alias",     Json(alias));
+  ret.set("id", Json(identity));
+  ret.set("site",  Json(site));
+  ret.set("name",  Json(name));
   return ret;
 }
 
