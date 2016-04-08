@@ -228,7 +228,6 @@ class Json{
     if (json_object_set(json, key, val.json))
       throw Err() << "json_object_set error"; }
 
-
   // delete key from object, throw error if key not found
   void del(const char *key){
     if (json_object_del(json, key))
@@ -239,6 +238,12 @@ class Json{
   Json get(const std::string &key) const { return get(key.c_str()); }
   Json operator[](const std::string &key) const { return get(key.c_str()); }
   void del(const std::string &key){ del(key.c_str()); }
+
+  // set functions for various types
+  template <typename T>
+  void set(const char *key, const T v){ set(key, Json(v)); }
+  template <typename T>
+  void set(const std::string &key, const T v){ set(key, Json(v)); }
 
   // update object all/existing/missing fields using
   // another object, throw exception on errors

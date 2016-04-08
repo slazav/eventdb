@@ -212,6 +212,16 @@ int main() {
     ASSERT_EQ(e8.size(), 0,      "e8 has wrong size");
 
 
+    e8.set("m1", true);
+    e8.set("m2", 1);
+    e8.set("m3", "12");
+    e8.set("m4", std::string("12"));
+    ASSERT_TRUE(e8["m1"].is_true(),    "e8[m1]");
+    ASSERT_TRUE(e8["m2"].is_integer(), "e8[m2]");
+    ASSERT_TRUE(e8["m3"].is_string(),  "e8[m3]");
+    ASSERT_TRUE(e8["m4"].is_string(),  "e8[m4]");
+   
+
     // work with array
 
     //    Json e0;

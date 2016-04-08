@@ -134,6 +134,10 @@ class Json { // class for the json data.
   void set(const std::string &key, const Json & val);
   void del(const std::string &key);
 
+  // set functions for various types
+  template <typename T> void set(const char *key, const T v);
+  template <typename T> void set(const std::string &key, const T v);
+
   // update object all/existing/missing fields using
   // another object, throw exception on errors
   void update(const Json & j);
