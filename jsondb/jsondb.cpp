@@ -20,10 +20,6 @@ int jsonbd_key_extractor(DB *secdb, const DBT *pkey, const DBT *pdata, DBT *skey
 
 /********************************************************************/
 
-// Type for integer keys. We need > 64bit for ms time in logs
-typedef unsigned long long int jsondb_ikey_t;
-
-/********************************************************************/
 // create DBT objects
 DBT
 mk_dbt(){
@@ -32,10 +28,10 @@ mk_dbt(){
   return ret;
 }
 DBT
-mk_dbt(const jsondb_ikey_t * i){
+mk_dbt(const json_int_t * i){
   DBT ret = mk_dbt();
   ret.data = (void *)i;
-  ret.size = sizeof(jsondb_ikey_t);
+  ret.size = sizeof(json_int_t);
   return ret;
 }
 DBT
@@ -133,11 +129,167 @@ JsonDB::JsonDB(const std::string & fname_,
   *refcounter  = 1;
 }
 
+
+
+/************************************/
+// Non-json operations
+
+// check if the database is empty
+bool
+JsonDB::is_empty(){
+  DBC *curs;
+  DBT key = mk_dbt();
+  DBT val = mk_dbt();
+  /* Get a cursor */
+  dbp->cursor(dbp, NULL, &curs, 0);
+  if (!curs) _dberr("can't get a cursor");
+  /* Try to get the first value */
+  int ret = curs->get(curs, &key, &val, DB_NEXT);
+  curs->close(curs);
+  if (ret == DB_NOTFOUND) return true;
+  if (ret) _dberr("can't use a cursor");
+  return false;
+}
+
+// for integer IDs we can get the last one and write the next one
+json_int_t
+JsonDB::get_last_id(){
+  if (!intkeys) _dberr("not an integer-key database");
+  DBC *curs;
+  dbp->cursor(dbp, NULL, &curs, 0);
+  if (!curs) _dberr("can't get a cursor");
+  DBT key = mk_dbt();
+  DBT val = mk_dbt();
+  int ret = curs->get(curs, &key, &val, DB_PREV);
+  curs->close(curs);
+  if (ret==DB_NOTFOUND) return 0;
+  if (ret) _dberr(ret);
+  return *(json_int_t *)key.data;
+}
+
+// put function
+void
+JsonDB::put(Json & jj, const bool overwrite){
+
+  if (!jj["id"]) _dberr("no id field in the json");
+
+  if (intkeys && !jj["id"].is_integer()) _dberr("integer id expected");
+  if (!intkeys && !jj["id"].is_string()) _dberr("string id expected");
+
+  json_int_t ikey; // we have to keep the data until dbp->put
+  std::string skey;
+  DBT key;
+  if (intkeys){
+    if (jj["id"].as_integer() < 0) jj.set("id", Json(get_last_id()+1));
+    ikey = jj["id"].as_integer();
+    key = mk_dbt(&ikey);
+  }
+  else {
+    skey=jj["id"].as_string();
+    key = mk_dbt(skey);
+  }
+  std::string sval = jj.save_string(JSON_PRESERVE_ORDER);
+  DBT val = mk_dbt(sval.c_str());
+  int ret = dbp->put(dbp, NULL, &key, &val, overwrite? 0:DB_NOOVERWRITE);
+  if (ret!=0) _dberr(ret);
+}
+
+// for integer IDs we can use time as a key (for log entries)
+void
+JsonDB::put_time(Json & jj){
+  if (!intkeys) _dberr("not an integer-key database");
+  json_int_t t = time(NULL)*1000;
+  while (exists(t)) t++;
+  jj.set("id", t);
+  put(jj, false);
+}
+
+// exists functions (integer or string key)
+bool
+JsonDB::exists(const json_int_t ikey) const{
+  if (!intkeys) _dberr("not an integer-key database");
+  DBT key = mk_dbt(&ikey);
+  DBT val = mk_dbt();
+  int ret = dbp->get(dbp, NULL, &key, &val, 0);
+  if (ret == DB_NOTFOUND) return false;
+  if (ret) _dberr(ret);
+  return true;
+}
+bool
+JsonDB::exists(const std::string & skey) const{
+  if (intkeys) _dberr("not a string-key database");
+  DBT key = mk_dbt(skey);
+  DBT val = mk_dbt();
+  int ret = dbp->get(dbp, NULL, &key, &val, 0);
+  if (ret == DB_NOTFOUND) return false;
+  if (ret) _dberr(ret);
+  return true;
+}
+
+// get functions (integer or string key)
+std::string
+JsonDB::get_str(const json_int_t ikey) const{
+  if (!intkeys) _dberr("not an integer-key database");
+  DBT key = mk_dbt(&ikey);
+  DBT val = mk_dbt();
+  int ret = dbp->get(dbp, NULL, &key, &val, 0);
+  if (ret != 0) _dberr(ret);
+  return std::string((const char *)val.data);
+}
+std::string
+JsonDB::get_str(const std::string & skey) const{
+  if (intkeys) _dberr("not a string-key database");
+  DBT key = mk_dbt(skey);
+  DBT val = mk_dbt();
+  int ret = dbp->get(dbp, NULL, &key, &val, 0);
+  if (ret != 0) _dberr(ret);
+  return std::string((const char *)val.data);
+}
+Json
+JsonDB::get(const json_int_t ikey) const{
+  if (!intkeys) _dberr("not an integer-key database");
+  DBT key = mk_dbt(&ikey);
+  DBT val = mk_dbt();
+  int ret = dbp->get(dbp, NULL, &key, &val, 0);
+  if (ret != 0) _dberr(ret);
+  return Json::load_string((const char *)val.data);
+}
+Json
+JsonDB::get(const std::string & skey) const{
+  if (intkeys) _dberr("not a string-key database");
+  DBT key = mk_dbt(skey);
+  DBT val = mk_dbt();
+  int ret = dbp->get(dbp, NULL, &key, &val, 0);
+  if (ret != 0) _dberr(ret);
+  return Json::load_string((const char *)val.data);
+}
+
+
+/********************************************************************/
+
+// get all the database entries as a json array
+Json
+JsonDB::get_all(){
+  DBC *curs;
+  DBT key = mk_dbt();
+  DBT val = mk_dbt();
+  /* Get a cursor */
+  dbp->cursor(dbp, NULL, &curs, 0);
+  if (!curs) _dberr("can't get a cursor");
+  Json jj = Json::array();
+  int ret;
+  while ((ret=curs->get(curs, &key, &val, DB_NEXT))==0)
+    jj.append(Json::load_string((const char *)val.data));
+  curs->close(curs);
+  return jj;
+}
+
+/********************************************************************/
+
 /* Open a secondary database, associated with some key
    in json objects of the primary database. */
 void
-JsonDB::open_sec(const std::string & key,
-             const bool dup){
+JsonDB::open_sec(const std::string & key, const bool dup){
 
   /* Initialize the DB handle */
   DB * sdbp;
@@ -171,144 +323,7 @@ JsonDB::open_sec(const std::string & key,
   jsondb_sec_keys[sdbp] = key; // put key in the global db index for the key extractor
 }
 
-
-/************************************/
-// Non-json operations
-
-// check if the database is empty
-bool
-JsonDB::is_empty(){
-  DBC *curs;
-  DBT key = mk_dbt();
-  DBT val = mk_dbt();
-  /* Get a cursor */
-  dbp->cursor(dbp, NULL, &curs, 0);
-  if (!curs) _dberr("can't get a cursor");
-  /* Try to get the first value */
-  int ret = curs->get(curs, &key, &val, DB_NEXT);
-  curs->close(curs);
-  if (ret == DB_NOTFOUND) return true;
-  if (ret) _dberr("can't use a cursor");
-  return false;
-}
-
-// put_str functions (integer or string key)
-void
-JsonDB::put_str(const jsondb_ikey_t ikey, const std::string & sval, const bool overwrite){
-  if (!intkeys) _dberr("not an integer-key database");
-  DBT key = mk_dbt(&ikey);
-  DBT val = mk_dbt(sval);
-  int ret = dbp->put(dbp, NULL, &key, &val, overwrite? 0:DB_NOOVERWRITE);
-  if (ret!=0) _dberr(ret);
-}
-void
-JsonDB::put_str(const std::string & skey, const std::string & sval, const bool overwrite){
-  if (intkeys) _dberr("not a string-key database");
-  DBT key = mk_dbt(skey);
-  DBT val = mk_dbt(sval);
-  int ret = dbp->put(dbp, NULL, &key, &val, overwrite? 0:DB_NOOVERWRITE);
-  if (ret!=0) _dberr(ret);
-}
-
-// exists functions (integer or string key)
-bool
-JsonDB::exists(const jsondb_ikey_t ikey){
-  if (!intkeys) _dberr("not an integer-key database");
-  DBT key = mk_dbt(&ikey);
-  DBT val = mk_dbt();
-  int ret = dbp->get(dbp, NULL, &key, &val, 0);
-  if (ret == DB_NOTFOUND) return false;
-  if (ret) _dberr(ret);
-  return true;
-}
-bool
-JsonDB::exists(const std::string & skey){
-  if (intkeys) _dberr("not a string-key database");
-  DBT key = mk_dbt(skey);
-  DBT val = mk_dbt();
-  int ret = dbp->get(dbp, NULL, &key, &val, 0);
-  if (ret == DB_NOTFOUND) return false;
-  if (ret) _dberr(ret);
-  return true;
-}
-
-// get_str functions (integer or string key)
-std::string
-JsonDB::get_str(const jsondb_ikey_t ikey){
-  if (!intkeys) _dberr("not an integer-key database");
-  DBT key = mk_dbt(&ikey);
-  DBT val = mk_dbt();
-  int ret = dbp->get(dbp, NULL, &key, &val, 0);
-  if (ret != 0) _dberr(ret);
-  return std::string((const char *)val.data);
-}
-std::string
-JsonDB::get_str(const std::string & skey){
-  if (intkeys) _dberr("not a string-key database");
-  DBT key = mk_dbt(skey);
-  DBT val = mk_dbt();
-  int ret = dbp->get(dbp, NULL, &key, &val, 0);
-  if (ret != 0) _dberr(ret);
-  return std::string((const char *)val.data);
-}
-
-/************************************/
-// for integer IDs we can get the last one and write the next one
-
-jsondb_ikey_t
-JsonDB::get_last_id(){
-  if (!intkeys) _dberr("not an integer-key database");
-  DBC *curs;
-  dbp->cursor(dbp, NULL, &curs, 0);
-  if (!curs) _dberr("can't get a cursor");
-  DBT key = mk_dbt();
-  DBT val = mk_dbt();
-  int ret = curs->get(curs, &key, &val, DB_PREV);
-  curs->close(curs);
-  if (ret==DB_NOTFOUND) return 0;
-  if (ret) _dberr(ret);
-  return *(jsondb_ikey_t *)key.data;
-}
-
-/************************************/
-// for integer IDs we can use time as a key (for log entries)
-
-jsondb_ikey_t
-JsonDB::put_str_time(const std::string & sval){
-  if (!intkeys) _dberr("not an integer-key database");
-  jsondb_ikey_t id = time(NULL)*1000;
-  DBT key = mk_dbt(&id);
-  DBT val = mk_dbt(sval);
-  /* Try to put entry, if id exists, increase it: */
-  int ret;
-  while( (ret = dbp->put(dbp, NULL, &key, &val, DB_NOOVERWRITE)) == DB_KEYEXIST) id++;
-  if (ret!=0) _dberr(ret);
-  return id;
-}
-
-/************************************/
-// get all the database entries as a json object
-Json
-JsonDB::get_all(){
-  DBC *curs;
-  DBT key = mk_dbt();
-  DBT val = mk_dbt();
-  /* Get a cursor */
-  dbp->cursor(dbp, NULL, &curs, 0);
-  if (!curs) _dberr("can't get a cursor");
-  Json jj = Json::object();
-  int ret;
-  while ((ret=curs->get(curs, &key, &val, DB_NEXT))==0){
-    std::ostringstream key_str;
-    if (intkeys) key_str << *(jsondb_ikey_t *)key.data;
-    else         key_str << (const char*)key.data;
-    jj.set(key_str.str(), Json::load_string((const char *)val.data));
-  }
-  curs->close(curs);
-  return jj;
-}
-
-// get entries with the specified key-value pair as a json object
+// get entries with the specified key-value pair as a json array
 Json
 JsonDB::secondary_get(const std::string & key, const std::string & val){
 
@@ -324,15 +339,12 @@ JsonDB::secondary_get(const std::string & key, const std::string & val){
   /* Get a cursor */
   sdbp->cursor(sdbp, NULL, &curs, 0);
   if (!curs) _dberr("can't get a cursor");
-  Json jj = Json::object();
+  Json jj = Json::array();
   int ret;
   int fl = DB_SET;
   while ((ret=curs->c_pget(curs, &skey, &pkey, &pval, fl))==0){
     fl = DB_NEXT_DUP;
-    std::ostringstream pkey_str;
-    if (intkeys)  pkey_str << *(jsondb_ikey_t *)pkey.data;
-    else          pkey_str << (const char*)pkey.data;
-    jj.set(pkey_str.str(), Json::load_string((const char *)pval.data));
+    jj.append(Json::load_string((const char *)pval.data));
   }
   curs->close(curs);
   return jj;
@@ -360,8 +372,8 @@ JsonDB::secondary_exists(const std::string & key, const std::string & val){
   return ret==0;
 }
 
-
 /******************************************************************************/
+
 int
 jsonbd_key_extractor(DB *secdb, const DBT *pkey,
                      const DBT *pdata, DBT *skey){

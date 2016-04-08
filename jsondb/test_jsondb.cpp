@@ -48,8 +48,12 @@ main() {
       db.open_sec("unames", false); // duplicated entries not allowed
 
       ASSERT_TRUE(db.is_empty(), "db is not empty!");
-      db.put_json(1, Json::load_string(c1)); // put json into db
-      db.put_str(2, c2); // put string directly
+      Json j1 = Json::load_string(c1);
+      Json j2 = Json::load_string(c2);
+      j1.set("id",1);
+      j2.set("id",2);
+      db.put(j1);
+      db.put(j2);
     }
     // add more entries
     {
@@ -58,31 +62,47 @@ main() {
       db.open_sec("unames", false); // duplicated entries not allowed
 
       ASSERT_FALSE(db.is_empty(), "db is empty!");
-      db.put_str(4, c3);
+      Json j3 = Json::load_string(c3);
+      j3.set("id",4);
+      db.put(j3);
 
       try{
-        db.put_str("10", c1, false);
+        j3.set("id","10");
+        db.put(j3);
         ASSERT_TRUE(false, "string key");
       } catch(JsonDB::Err e){};
 
       try{
-        db.put_str(4, c1, false);
+        j3.set("id",4);
+        db.put(j3, false);
         ASSERT_TRUE(false, "overwriting");
       } catch(JsonDB::Err e){};
 
-      db.put_str_next(c4);
-      db.put_json_next(Json::load_string(c5));
+      Json j4 = Json::load_string(c4);
+      Json j5 = Json::load_string(c5);
+      j4.set("id",-1);
+      j5.set("id",-1);
+      db.put(j4);
+      db.put(j5);
 
       try{
-        db.put_str_next("{\"names\": \"1\", \"unames\": 2}");
+        Json j = Json::load_string("{\"names\": \"1\", \"unames\": 2, \"id\":-1}");
+        db.put(j);
         ASSERT_TRUE(false, "string or array expected for unames");
       } catch(JsonDB::Err e){};
 
       try{
-        db.put_str_next("{\"names\": \"d\", \"unames\": \"a1\"}");
+        Json j = Json::load_string("{\"names\": \"d\", \"unames\": \"a1\", \"id\":-1}");
+        db.put(j);
         ASSERT_TRUE(false, "non-unique key");
       } catch(JsonDB::Err e){};
     }
+
+    const char *r1 = "{\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10, \"id\": 1}";
+    const char *r2 = "{\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10, \"id\": 2}";
+    const char *r3 = "{\"names\": \"a\", \"unames\": {\"id\": \"a3\"}, \"value\": 30, \"id\": 4}";
+    const char *r4 = "{\"unames\": [\"a4\"], \"value\": 40, \"id\": 5}";
+    const char *r5 = "{\"names\": \"c\", \"unames\": [\"a5\"], \"value\": 50, \"id\": 6}";
 
     // check entries
     {
@@ -92,25 +112,27 @@ main() {
       ASSERT_TRUE(db.exists(2), "exist key2");
       ASSERT_FALSE(db.exists(3), "exist key3");
       ASSERT_TRUE(db.exists(4), "exist key4");
-      ASSERT_EQ(db.get_str(1), c1, "get_str1");
-      ASSERT_EQ(db.get_str(2), c2, "get_str2");
-      ASSERT_EQ(db.get_str(4), c3, "get_str3");
-      ASSERT_EQ(db.get_str(5), c4, "get_str4");
-      ASSERT_EQ(db.get_str(6), c5, "get_str5");
-      ASSERT_NE(db.get_str(2), c3, "get_str3");
+
+
+      ASSERT_EQ(db.get_str(1), r1, "get_str1");
+      ASSERT_EQ(db.get_str(2), r2, "get_str2");
+      ASSERT_EQ(db.get_str(4), r3, "get_str3");
+      ASSERT_EQ(db.get_str(5), r4, "get_str4");
+      ASSERT_EQ(db.get_str(6), r5, "get_str5");
+      ASSERT_NE(db.get_str(1), r2, "get_str3");
       ASSERT_EQ(db.get_last_id(), 6, "last_id");
 
       std::string res0 = db.get_all().save_string(JSON_PRESERVE_ORDER);
       std::string exp0;
-      exp0 = exp0 +  "{\"1\": " + c1
-                  + ", \"2\": " + c2
-                  + ", \"4\": " + c3
-                  + ", \"5\": " + c4
-                  + ", \"6\": " + c5 + "}";
+      exp0 = exp0 +  "[" + r1
+                  + ", " + r2
+                  + ", " + r3
+                  + ", " + r4
+                  + ", " + r5 + "]";
+
       ASSERT_EQ(res0, exp0, "get_all");
 
     }
-
     // check secondary dbs
     {
       JsonDB db("test1", intkeys, DB_RDONLY); // open DB
@@ -123,10 +145,11 @@ main() {
       std::string resd  = (db.secondary_get("names", "d")).save_string(JSON_PRESERVE_ORDER);
       std::string resa2 = (db.secondary_get("unames", "a2")).save_string(JSON_PRESERVE_ORDER);
 
-      const char *expa = "{\"1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"4\": {\"names\": \"a\", \"unames\": {\"id\": \"a3\"}, \"value\": 30}}";
-      const char *expb = "{\"1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}}";
-      const char *expc = "{\"1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"2\": {\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}, \"6\": {\"names\": \"c\", \"unames\": [\"a5\"], \"value\": 50}}";
-      const char *expd = "{\"2\": {\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}}";
+      std::string expa,expb,expc,expd;
+      expa = expa + "[" + r1 + ", " + r3 + "]";
+      expb = expb + "[" + r1 + "]";
+      expc = expc + "[" + r1 + ", " + r2 + ", " + r5 + "]";
+      expd = expd + "[" + r2 + "]";
 
       ASSERT_EQ(resa, expa, "find names == a");
       ASSERT_EQ(resb, expb, "find names == b");
@@ -145,12 +168,13 @@ main() {
       JsonDB db("test1", intkeys); // open DB
       db.open_sec("names",  true);  // duplicated entries allowed
       db.open_sec("unames", false); // duplicated entries not allowed
-      const char * c1 = "{\"a\": \"string1\"}";
-      size_t t1 = db.put_str_time(c1);
-      size_t t2 = db.put_str_time(c1);
+      Json j1 = Json::load_string("{\"a\": \"string1\"}");
+      Json j2 = Json::load_string("{\"a\": \"string1\"}");
+      db.put_time(j1);
+      db.put_time(j2);
+      json_int_t t1 = j1["id"].as_integer();
+      json_int_t t2 = j2["id"].as_integer();
       ASSERT_NE(t1,t2,"log1");
-      ASSERT_EQ(db.get_str(t1),c1,"log2");
-      ASSERT_EQ(db.get_str(t2),c1,"log3");
     }
 
     /*********************************************************************************/
@@ -162,8 +186,12 @@ main() {
       db.open_sec("unames", false); // duplicated entries not allowed
 
       ASSERT_TRUE(db.is_empty(), "db is not empty!");
-      db.put_json("e1", Json::load_string(c1)); // put json into db
-      db.put_str("e2", c2); // put string directly
+      Json j1 = Json::load_string(c1);
+      Json j2 = Json::load_string(c2);
+      j1.set("id","e1");
+      j2.set("id","e2");
+      db.put(j1);
+      db.put(j2);
     }
 
     // add more entries
@@ -173,33 +201,43 @@ main() {
       db.open_sec("unames", false); // duplicated entries not allowed
 
       ASSERT_FALSE(db.is_empty(), "db is empty!");
-      db.put_str("e4", c3);
+      Json j3 = Json::load_string(c3);
+      j3.set("id","e4");
+      db.put(j3);
 
       try{
-        db.put_str("e4", c1, false);
+        db.put(j3, false);
         ASSERT_TRUE(false, "overwriting");
       } catch(JsonDB::Err e){};
 
       try{
-        db.put_str(4, c1, false);
+        j3.set("id",100);
+        db.put(j3);
         ASSERT_TRUE(false, "int key");
       } catch(JsonDB::Err e){};
 
-      db.put_str("e5", c4);
-      db.put_json("e6", Json::load_string(c5));
+      Json j4 = Json::load_string(c4);
+      Json j5 = Json::load_string(c5);
+      j4.set("id","e5");
+      j5.set("id","e6");
+      db.put(j4);
+      db.put(j5);
 
       try{
-        db.put_str_next("{\"names\": \"1\", \"unames\": \"2\"}");
+        j5.set("id",-1);
+        db.put(j5);
         ASSERT_TRUE(false, "not an integer key");
       } catch(JsonDB::Err e){};
 
       try{
-        db.put_str_next("{\"names\": \"1\", \"unames\": 2}");
+        Json j = Json::load_string("{\"names\": \"1\", \"unames\": 2, \"id\":\"z1\"}");
+        db.put(j);
         ASSERT_TRUE(false, "string or array expected for unames");
       } catch(JsonDB::Err e){};
 
       try{
-        db.put_str_next("{\"names\": \"d\", \"unames\": \"a1\"}");
+        Json j = Json::load_string("{\"names\": \"d\", \"unames\": \"a1\", \"id\":\"z2\"}");
+        db.put(j);
         ASSERT_TRUE(false, "non-unique key");
       } catch(JsonDB::Err e){};
 
@@ -209,6 +247,11 @@ main() {
       } catch(JsonDB::Err e){};
     }
 
+    const char *q1 = "{\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10, \"id\": \"e1\"}";
+    const char *q2 = "{\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10, \"id\": \"e2\"}";
+    const char *q3 = "{\"names\": \"a\", \"unames\": {\"id\": \"a3\"}, \"value\": 30, \"id\": \"e4\"}";
+    const char *q4 = "{\"unames\": [\"a4\"], \"value\": 40, \"id\": \"e5\"}";
+    const char *q5 = "{\"names\": \"c\", \"unames\": [\"a5\"], \"value\": 50, \"id\": \"e6\"}";
 
     // check entries
     {
@@ -218,20 +261,22 @@ main() {
       ASSERT_TRUE(db.exists("e2"), "exist key2");
       ASSERT_FALSE(db.exists("e3"), "exist key3");
       ASSERT_TRUE(db.exists("e4"), "exist key4");
-      ASSERT_EQ(db.get_str("e1"), c1, "get_str1");
-      ASSERT_EQ(db.get_str("e2"), c2, "get_str2");
-      ASSERT_EQ(db.get_str("e4"), c3, "get_str3");
-      ASSERT_EQ(db.get_str("e5"), c4, "get_str4");
-      ASSERT_EQ(db.get_str("e6"), c5, "get_str5");
-      ASSERT_NE(db.get_str("e2"), c3, "get_str3");
+
+
+      ASSERT_EQ(db.get_str("e1"), q1, "get_str1");
+      ASSERT_EQ(db.get_str("e2"), q2, "get_str2");
+      ASSERT_EQ(db.get_str("e4"), q3, "get_str3");
+      ASSERT_EQ(db.get_str("e5"), q4, "get_str4");
+      ASSERT_EQ(db.get_str("e6"), q5, "get_str5");
+      ASSERT_NE(db.get_str("e2"), q3, "get_str3");
 
       std::string res0 = (db.get_all()).save_string(JSON_PRESERVE_ORDER);
       std::string exp0;
-      exp0 = exp0 +  "{\"e1\": " + c1
-                  + ", \"e2\": " + c2
-                  + ", \"e4\": " + c3
-                  + ", \"e5\": " + c4
-                  + ", \"e6\": " + c5 + "}";
+      exp0 = exp0 +  "[" + q1
+                  + ", " + q2
+                  + ", " + q3
+                  + ", " + q4
+                  + ", " + q5 + "]";
       ASSERT_EQ(res0, exp0, "get_all");
 
     }
@@ -248,10 +293,11 @@ main() {
       std::string resd  = (db.secondary_get("names", "d")).save_string(JSON_PRESERVE_ORDER);
       std::string resa2 = (db.secondary_get("unames", "a2")).save_string(JSON_PRESERVE_ORDER);
 
-      const char *expa = "{\"e1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"e4\": {\"names\": \"a\", \"unames\": {\"id\": \"a3\"}, \"value\": 30}}";
-      const char *expb = "{\"e1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}}";
-      const char *expc = "{\"e1\": {\"names\": [\"a\", \"b\", \"c\"], \"unames\": [\"a1\", \"b1\"], \"value\": 10}, \"e2\": {\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}, \"e6\": {\"names\": \"c\", \"unames\": [\"a5\"], \"value\": 50}}";
-      const char *expd = "{\"e2\": {\"names\": [{\"id\": \"d\", \"value\": 0}, \"d\", \"c\"], \"unames\": \"a2\", \"value\": 10}}";
+      std::string expa,expb,expc,expd;
+      expa = expa + "[" + q1 + ", " + q3 + "]";
+      expb = expb + "[" + q1 + "]";
+      expc = expc + "[" + q1 + ", " + q2 + ", " + q5 + "]";
+      expd = expd + "[" + q2 + "]";
 
       ASSERT_EQ(resa, expa, "find names == a");
       ASSERT_EQ(resb, expb, "find names == b");

@@ -21,12 +21,9 @@
    Keys are unique integers or strings, values are json strings.
    Secondary indices are supported to look through fields in json objects.
 
+   "id" field and duplication
+
 */
-/********************************************************************/
-
-// Type for integer keys. We need > 64bit for ms time in logs
-typedef unsigned long long int jsondb_ikey_t;
-
 /********************************************************************/
 // The main JsonDB class
 
@@ -97,67 +94,50 @@ class JsonDB{
          const bool intkeys_ = true,
          const int flags_=0);
 
-  /* Open a secondary database, associated with some key
-     in json objects of the primary database. */
-  void open_sec(const std::string & key, const bool dup = false);
-
   /************************************/
   // Non-json operations
 
   // check if the database is empty
   bool is_empty();
 
-  // put_str functions (integer or string key)
-  void put_str(const jsondb_ikey_t ikey,
-               const std::string & sval, const bool overwrite = true);
-  void put_str(const std::string & skey,
-               const std::string & sval, const bool overwrite = true);
+  // for integer IDs we can get the last one
+  // (or 0 if database is empty).
+  json_int_t get_last_id();
+
+  // Put the json object into the database.
+  // Integer or string key should be in "id" field of the object.
+  // If integer id < 0 then the next available id is used
+  // and the object is updated.
+  void put(Json & jj, const bool overwrite = true);
+
+  // Put the object with id equals to current unique time in ms.
+  // "id" field in the object is not used, after run it is set to
+  // the time.
+  void put_time(Json & jj);
 
   // exists functions (integer or string key)
-  bool exists(const jsondb_ikey_t ikey);
-  bool exists(const std::string & skey);
+  bool exists(const json_int_t ikey) const;
+  bool exists(const std::string & skey) const;
 
-  // get_str functions (integer or string key)
-  std::string get_str(const jsondb_ikey_t ikey);
-  std::string get_str(const std::string & skey);
+  // get functions (integer or string key)
+  std::string get_str(const std::string & skey) const;
+  std::string get_str(const json_int_t ikey) const;
+  Json get(const std::string & skey) const;
+  Json get(const json_int_t ikey) const;
 
-  /************************************/
-  // json operations
-
-  // put_json functions (integer or string key)
-  void put_json(const jsondb_ikey_t ikey, const Json & jj, const bool overwrite = true){
-    put_str(ikey, jj.save_string(JSON_PRESERVE_ORDER), overwrite); }
-  void put_json(const std::string & skey, const Json & jj, const bool overwrite = true){
-    put_str(skey, jj.save_string(JSON_PRESERVE_ORDER), overwrite); }
-
-  // get_json functions (integer or string key)
-  Json get_json(const std::string & skey){
-    return Json::load_string(get_str(skey)); }
-  Json get_json(const jsondb_ikey_t ikey){
-    return Json::load_string(get_str(ikey)); }
 
   /************************************/
-  // for integer IDs we can get the last one and write the next one
-
-  jsondb_ikey_t get_last_id();
-  void put_str_next(const std::string & sval, const bool overwrite = true){
-    put_str(get_last_id()+1, sval, overwrite); }
-  void put_json_next(const Json & jj, const bool overwrite = true){
-    put_json(get_last_id()+1, jj, overwrite); }
-
-  /************************************/
-  // for integer IDs we can use time as a key (for log entries)
-
-  jsondb_ikey_t put_str_time(const std::string & sval);
-  jsondb_ikey_t put_json_time(const Json & jj){
-    return put_str_time(jj.save_string(JSON_PRESERVE_ORDER));}
-
-  /************************************/
-  // get all the database entries as a json object
+  // get all the database entries as a json array
   Json get_all();
 
-  // get entries with the specified key:value pair as a json object
+  /************************************/
+  /* Open a secondary database, associated with some key
+     in json objects of the primary database. */
+  void open_sec(const std::string & key, const bool dup = false);
+
+  // get entries with the specified key:value pair as a json array
   Json secondary_get(const std::string & key, const std::string & val);
+
   // check that there are any entries in the secondary db for key:value pair
   bool secondary_exists(const std::string & key, const std::string & val);
 
