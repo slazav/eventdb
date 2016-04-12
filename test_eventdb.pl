@@ -76,7 +76,7 @@ run_test('my_info', $o2->{session}, '{"error_type":"my_info","error_message":"au
 
 # set alias
 run_test('set_alias s', $o1->{session}, '{"error_type":"set_alias","error_message":"too short alias"}');
-run_test('set_alias sssssssssssssssssssss', $o1->{session}, '{"error_type":"set_alias","error_message":"too long alias"}');
+run_test('set_alias 1234567890123456789012345678901', $o1->{session}, '{"error_type":"set_alias","error_message":"too long alias"}');
 run_test('set_alias s@s', $o1->{session}, '{"error_type":"set_alias","error_message":"only letters, numbers and _ are allowed in alias"}');
 $r1=~s/\"alias\": \"[^\"]*\"/\"alias\": \"sla\"/;
 run_test('set_alias sla', $o1->{session}, $r1);
@@ -106,5 +106,19 @@ run_test('my_info', $o1->{session}, '{"error_type":"my_info","error_message":"au
 $o1 = run_test('login', '382512edfa7149b79b910cf6227e3e16', $r1);
 run_test('user_list', $o1->{session}, '[{"id": 1, "faces": [{"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "sla"}, {"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}], "level": 0, "alias": "TestUser", "level_hints": [-1, 0, 1, 2]}, {"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 0, "alias": "user01", "level_hints": [-1, 0, 1, 2]}]');
 run_test('user_list', '', '{"error_type":"user_list","error_message":"authentication error"}');
+
+#*********************
+# join requests
+
+run_test('joinreq_add user01', $o1->{session}, '{}');
+run_test('my_info', $o4->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 0, "alias": "user01", "stime": 1234567890, "session": "-", "joinreq": [{"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}]}');
+run_test('my_info', $o1->{session}, $r1);
+run_test('joinreq_delete 0', $o4->{session}, '{}');
+run_test('my_info', $o4->{session}, $r3);
+
+run_test('joinreq_add user01', $o1->{session}, '{}');
+run_test('joinreq_accept 0', $o4->{session}, '{}');
+run_test('my_info', $o4->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 0, "alias": "user01", "stime": 1234567890, "session": "-"}');
+run_test('my_info', $o1->{session}, '{"error_type":"my_info","error_message":"authentication error"}');
 
 

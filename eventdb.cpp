@@ -43,7 +43,11 @@ main(int argc, char **argv){
     else if (action == "set_alias") do_set_alias(cfg, argc-1, argv+1);
     else if (action == "set_level") do_set_level(cfg, argc-1, argv+1);
     else if (action == "user_list") do_user_list(cfg, argc-1, argv+1);
+    else if (action == "joinreq_add") do_joinreq_add(cfg, argc-1, argv+1);
+    else if (action == "joinreq_delete") do_joinreq_delete(cfg, argc-1, argv+1);
+    else if (action == "joinreq_accept") do_joinreq_accept(cfg, argc-1, argv+1);
     else throw Err("eventdb") << "Unknown action: " << action;
+    throw Exc() << "{}";
   }
   catch(Err e)        { process_result(e); }
   catch(Json::Err e)  { process_result(e); }

@@ -336,6 +336,79 @@ do_user_list(const CFG & cfg, int argc, char **argv){
 }
 
 /********************************************************************/
+// join requests
+void
+do_joinreq_add(const CFG & cfg, int argc, char **argv){
+  Err("joinreq_add");
+  check_args(argc, 1);
+  const char *alias2  = argv[1];
+
+  /* Get user information. Empty session is an error */
+  UserDB udb(cfg);
+  Json user = udb.get_by_session(get_secret());
+  clr_secret();
+  if (!user) throw Err() << "authentication error";
+
+  /* the second user */
+  Json user2 = udb.get_by_alias(alias2);
+  if (!user2) throw Err() << "no such user";
+
+  // add all faces to the request
+  user2.set("joinreq", user["faces"]);
+  udb.put(user2);
+}
+
+void
+do_joinreq_delete(const CFG & cfg, int argc, char **argv){
+  Err("joinreq_delete");
+  check_args(argc, 1);
+  size_t num = atoi(argv[1]);
+
+  /* Get user information. Empty session is an error */
+  UserDB udb(cfg);
+  Json user = udb.get_by_session(get_secret());
+  clr_secret();
+  if (!user) throw Err() << "authentication error";
+
+  user["joinreq"].del(num);
+  if (user["joinreq"].size()==0) user.del("joinreq");
+  udb.put(user);
+}
+
+void
+do_joinreq_accept(const CFG & cfg, int argc, char **argv){
+  Err("joinreq_accept");
+  check_args(argc, 1);
+  size_t num = atoi(argv[1]);
+
+  /* Get user information. Empty session is an error */
+  UserDB udb(cfg);
+  Json user = udb.get_by_session(get_secret());
+  clr_secret();
+  if (!user) throw Err() << "authentication error";
+
+  string id2 = user["joinreq"][num]["id"].as_string();
+
+  /* the second user */
+  Json user2 = udb.get_by_face(id2);
+  if (!user2) throw Err() << "no such user";
+
+  /* Remove the face. If needed, remove the user */
+  for (size_t i=0; i<user2["faces"].size(); i++){
+     if (user2["faces"][i]["id"].as_string() == id2)
+     user2["faces"].del(i);
+  }
+  if (user2["faces"].size()==0) udb.del(user2);
+
+  /* Put the face into the first user */
+  user["faces"].append(user["joinreq"][num]);
+  user["joinreq"].del(num);
+  if (user["joinreq"].size()==0) user.del("joinreq");
+  udb.put(user);
+}
+
+
+/********************************************************************/
 // event database
 //  id -> {id, name, text, date1, date2,
 //         [people], [links], [tags]
