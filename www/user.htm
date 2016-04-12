@@ -45,13 +45,49 @@
      <img src="RESDIR/edit2.png"
           onclick="ch_alias_form()" alt="редактировать">
      <input id="ch_alias_form" type="text" style="display:none"
-            name="new_alias" onchange="ch_alias_do()"></span>.
+            name="new_alias" onchange="ch_alias_do()"></span>
   <br>Вы можете поменять имя, нажав на картинку справа от него.
   <br>Имя может содержать от 2 до 20 символов: буквы, цифры, символы подчеркивания "_".
   <br>Имя не может совпадать с именем другого пользователя.
 
+
+  <script>
+    // open/close the set alias form
+    // fill it with a current alias name
+    function join_form(){
+      var form = document.getElementById('join_form');
+      form.style.display = form.style.display=="inline"? "none":"inline";
+    }
+    // ch_join add request
+    function join_add(){
+      var newal = document.getElementById('join_add').value;
+      do_request('joinreq_add ' + newal, function(my_info){
+        document.getElementById('join_add_text').style.display="inline";
+      });
+    }
+  </script>
+
   <p>Вы можете заходить сюда со своих аккаунтов в соцсетях:
-  <br><span class="user_identity"></span>.
+  <br><span class="user_identity"></span>
+
+  <p>Если вы хотите настроить вход с других аккаунтов, нажмите на картинку:
+     <img src="RESDIR/edit2.png"
+          onclick="join_form()" alt="форма добавления аккаунтов">
+     <div id="join_form" style="display:none"><font size="-1">
+     <p>Чтобы добавить новый аккаунт, запомните имя пользователя, к которому вы
+        хотите его добавить.
+     <br>Зайдите под новым аккаунтом и в следующей форме введите это имя.
+     <br>Имя пользователя, к которому вы хотите присоединиться:
+        <input type="text" id="join_add" onchange="join_add()">
+        <font color="#800000" style="display:none" id="join_add_text">
+        Запрос отправлен. </font>
+     <p>После того, как запрос будет отправлен, перелогинтесь обратно
+        с помощью первого аккаунта и примите (или отклоние запрос).
+     <br><span class="user_joinreqs"></span>
+     <br>Будте внимательны, принимайте те запросы, которые вы отправляли, убедитесь,
+         что это ваш аккаунт.
+     </font></div>
+
 
   <p>Ваш уровень доступа: <span class="user_rlevel"></span>. Поменять ваш уровень
      доступа может пользователь с уровнем, большим, чем у вас.
@@ -122,9 +158,9 @@
           for (var key in users){
             tab.innerHTML = tab.innerHTML
               + '<tr>'
-              + '<td><b>' + users[key].alias + '</b></td>'
-              + '<td>' + user_faces(users[key],'<br>') + '</td>'
-              + '<td>' + level_form(users[key]) + '</td>'
+              + '<td valign=top><b>' + users[key].alias + '</b></td>'
+              + '<td valign=top>' + user_faces(users[key],'<br>') + '</td>'
+              + '<td valign=top>' + level_form(users[key]) + '</td>'
               + '</tr>';
           }
         });

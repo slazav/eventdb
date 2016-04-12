@@ -118,7 +118,7 @@ run_test('my_info', $o4->{session}, $r3);
 
 run_test('joinreq_add user01', $o1->{session}, '{}');
 run_test('joinreq_accept 0', $o4->{session}, '{}');
-run_test('my_info', $o4->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 0, "alias": "user01", "stime": 1234567890, "session": "-"}');
+run_test('my_info', $o4->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "user01", "stime": 1234567890, "session": "-"}');
 run_test('my_info', $o1->{session}, '{"error_type":"my_info","error_message":"authentication error"}');
 
 

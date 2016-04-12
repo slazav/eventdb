@@ -38,17 +38,24 @@ function update_user_info(my_info){
     lform.innerHTML = '<a href="USERHTM"><span class="user_alias"></span></a> '
        + '<input type="submit" value="выйти" '
        + 'name="LogOut" onclick="do_logout()"/>';
+
     a = document.getElementsByClassName('user_alias');
     for (var i=0; i < a.length; i++){
       a[i].innerHTML = my_info.alias; }
+
     a = document.getElementsByClassName('user_rlevel');
     for (var i=0; i < a.length; i++){
       a[i].innerHTML = get_rlevel(my_info.level); }
+
+    a = document.getElementsByClassName('user_joinreqs');
+    for (var i=0; i < a.length; i++){
+      a[i].innerHTML = user_joinreqs(my_info, '<br>'); }
+
     a = document.getElementsByClassName('user_identity');
     for (var i=0; i < a.length; i++){
       a[i].innerHTML = user_faces(my_info, '<br>'); }
-    if (my_info.level<1) {list_block='none';}
 
+    if (my_info.level<1) {list_block='none';}
   } else {
     lform.innerHTML='<a href="' + lgnz_url + '">войти</a>';
     name_block = 'none';
@@ -57,6 +64,7 @@ function update_user_info(my_info){
 
   a = document.getElementsByClassName('name_block');
   for (var i=0; i < a.length; i++){ a[i].style.display=name_block; }
+
   a = document.getElementsByClassName('list_block');
   for (var i=0; i < a.length; i++){ a[i].style.display=list_block; }
 
@@ -114,3 +122,24 @@ function user_faces(user, sep){
   }
   return ret;
 }
+
+// print user join requests
+function user_joinreqs(user, sep){
+  var ret="";
+  if (user.joinreq == undefined) return "";
+  for (var i=0; i<user.joinreq.length; i++){
+    ret += (i==0?"":sep) + user_face(user.joinreq[i]);
+    ret += ' <input type=submit value="принять" onclick="joinreq_accept('+ i +')">';
+    ret += ' <input type=submit value="отклонить" onclick="joinreq_delete('+ i +')">';
+  }
+  return ret;
+}
+
+function joinreq_accept(i){
+  do_request('joinreq_accept ' + i, update_user_info);
+}
+
+function joinreq_delete(i){
+  do_request('joinreq_delete ' + i, update_user_info);
+}
+

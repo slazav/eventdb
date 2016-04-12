@@ -393,12 +393,17 @@ do_joinreq_accept(const CFG & cfg, int argc, char **argv){
   Json user2 = udb.get_by_face(id2);
   if (!user2) throw Err() << "no such user";
 
+  /* set the level to the maximum */
+  int l1 = user["level"].as_integer();
+  int l2 = user2["level"].as_integer();
+  user.set("level", max(l1,l2));
+
   /* Remove the face. If needed, remove the user */
   for (size_t i=0; i<user2["faces"].size(); i++){
      if (user2["faces"][i]["id"].as_string() == id2)
      user2["faces"].del(i);
   }
-  if (user2["faces"].size()==0) udb.del(user2);
+  if (user2["faces"].size()==0) udb.del(user2["id"].as_integer());
 
   /* Put the face into the first user */
   user["faces"].append(user["joinreq"][num]);
