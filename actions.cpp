@@ -76,7 +76,7 @@ get_anon(){
 
 // check user alias
 #define MINALIAS 2
-#define MAXALIAS 20
+#define MAXALIAS 30
 #define ALIASSYMB\
   "abcdefghijklmnopqrstuvwxyz"\
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"\
