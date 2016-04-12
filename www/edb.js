@@ -46,8 +46,8 @@ function update_user_info(my_info){
       a[i].innerHTML = get_rlevel(my_info.level); }
     a = document.getElementsByClassName('user_identity');
     for (var i=0; i < a.length; i++){
-      a[i].innerHTML = user_faces(my_info, ', '); }
-    if (my_info.level<0) {list_block='none';}
+      a[i].innerHTML = user_faces(my_info, '<br>'); }
+    if (my_info.level<1) {list_block='none';}
 
   } else {
     lform.innerHTML='<a href="' + lgnz_url + '">войти</a>';
