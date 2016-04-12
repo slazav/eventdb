@@ -136,10 +136,10 @@ function user_joinreqs(user, sep){
 }
 
 function joinreq_accept(i){
-  do_request('joinreq_accept ' + i, update_user_info);
+  do_request('joinreq_accept ' + i, do_init);
 }
 
 function joinreq_delete(i){
-  do_request('joinreq_delete ' + i, update_user_info);
+  do_request('joinreq_delete ' + i, do_init);
 }
 

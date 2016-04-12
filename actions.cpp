@@ -404,6 +404,7 @@ do_joinreq_accept(const CFG & cfg, int argc, char **argv){
      user2["faces"].del(i);
   }
   if (user2["faces"].size()==0) udb.del(user2["id"].as_integer());
+  else udb.put(user2);
 
   /* Put the face into the first user */
   user["faces"].append(user["joinreq"][num]);

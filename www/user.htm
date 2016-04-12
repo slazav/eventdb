@@ -63,6 +63,7 @@
       var newal = document.getElementById('join_add').value;
       do_request('joinreq_add ' + newal, function(my_info){
         document.getElementById('join_add_text').style.display="inline";
+
       });
     }
   </script>
@@ -82,7 +83,7 @@
         <font color="#800000" style="display:none" id="join_add_text">
         Запрос отправлен. </font>
      <p>После того, как запрос будет отправлен, перелогинтесь обратно
-        с помощью первого аккаунта и примите (или отклоние запрос).
+        с помощью первого аккаунта и примите (или отклоните) запрос.
      <br><span class="user_joinreqs"></span>
      <br>Будте внимательны, принимайте те запросы, которые вы отправляли, убедитесь,
          что это ваш аккаунт.
