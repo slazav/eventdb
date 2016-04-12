@@ -22,6 +22,7 @@ using namespace std;
 //#define JSON_OUT_FLAGS  (JSON_PRESERVE_ORDER | JSON_INDENT(2))
 #define JSON_OUT_FLAGS  JSON_PRESERVE_ORDER
 
+
 /********************************************************************/
 // common functions
 
@@ -71,6 +72,22 @@ get_anon(){
   ret.set("alias",    "anon");
   ret.set("level",    LEVEL_ANON);
   return ret;
+}
+
+// check user alias
+#define MINALIAS 2
+#define MAXALIAS 20
+#define ALIASSYMB\
+  "abcdefghijklmnopqrstuvwxyz"\
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"\
+  "0123456789_"
+void
+check_alias(const char *alias){
+  int n=strlen(alias);
+  if (n<MINALIAS) throw Err() << "too short alias";
+  if (n>MAXALIAS) throw Err() << "too long alias";
+  if (strspn(alias, ALIASSYMB)!=n)
+    throw Err() << "only letters, numbers and _ are allowed in alias";
 }
 
 /********************************************************************/
@@ -145,7 +162,15 @@ do_login(const CFG & cfg, int argc, char **argv){
 
     // auto alias:
     // first try an alias, derived from the name -- TODO!
-    string alias = face["name"].as_string();
+    string name = face["name"].as_string();
+    string alias;
+    for (int i=0; i<name.length(); i++){
+      if (index(ALIASSYMB, name[i])==NULL) continue;
+      if (i>=MAXALIAS) break;
+      alias.push_back(name[i]);
+    }
+    if (alias.length() < MINALIAS) alias="user01";
+
     // if alias exists try "user01", "user02", etc.
     int num=1;
     char nstr[5];
@@ -220,19 +245,8 @@ do_set_alias(const CFG & cfg, int argc, char **argv){
   check_args(argc, 1);
   const char *alias = argv[1];
 
-  // check symbols in the new alias:
-  #define MINALIAS 2
-  #define MAXALIAS 20
-  const char *accept =
-    "abcdefghijklmnopqrstuvwxyz"
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "0123456789_";
-  // @ is not here, but it exists in automatically created aliases
-  int n=strlen(alias);
-  if (n<MINALIAS) throw Err() << "too short alias";
-  if (n>MAXALIAS) throw Err() << "too long alias";
-  if (strspn(alias, accept)!=n)
-    throw Err() << "only letters, numbers and _ are allowed in alias";
+  // check length and symbols in the new alias:
+  check_alias(alias);
 
   /* Get user information. Empty session is an error */
   UserDB udb(cfg);
