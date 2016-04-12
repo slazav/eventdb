@@ -1,7 +1,7 @@
 <html>
 <head>
-  <LINK href="eventdb/eventdb.css" rel="stylesheet" type="text/css">
-  <script type="text/JavaScript" src="eventdb/eventdb.js"></script>
+  <LINK href="RESDIR/edb.css" rel="stylesheet" type="text/css">
+  <script type="text/JavaScript" src="RESDIR/edb.js"></script>
   <style>
     th {
       font-weight: normal;
@@ -13,7 +13,7 @@
 <body>
 
   <table width="100%" border=0 class="main_menu"><tr>
-  <td class=hh width="50%"><a href="main.htm">Главная</a></td>
+  <td class=hh width="50%"><a href="MAINHTM">Главная</a></td>
   <td class=hh width="50%" align=right id=login_box></td>
   </tr></table>
   <hr>
@@ -22,7 +22,7 @@
 
   <script>
     // open/close the set alias form
-    // fill if with a current alias name
+    // fill it with a current alias name
     function ch_alias_form(){
       var form = document.getElementById('ch_alias_form');
       form.value= document.getElementById('user_alias').innerHTML;
@@ -40,18 +40,17 @@
   </script>
 
   <span class="name_block" style="display:none">
-  <p>Вы -- <span class="user_identity"></span>,
-     в социальных сетях про вас известно все!
   <p>Ваше имя на этом сайте:
      <b><span class="user_alias" id="user_alias"></span></b>
-     <img src="http://slazav.mccme.ru/eventdb/edit2.png"
+     <img src="RESDIR/edit2.png"
           onclick="ch_alias_form()" alt="редактировать">
      <input id="ch_alias_form" type="text" style="display:none"
             name="new_alias" onchange="ch_alias_do()"></span>.
   <br>Вы можете поменять имя, нажав на картинку справа от него.
-  <br>Имя может содержать от 2 до 20 символов: буквы, цифры, символы подчеркивания "_"
-  <br>(автоматически созданные имена содержат также знак "@").
+  <br>Имя может содержать от 2 до 20 символов: буквы, цифры, символы подчеркивания "_".
   <br>Имя не может совпадать с именем другого пользователя.
+
+  <p>Вы можете заходить сюда со своих аккаунтов в соцсетях: <span class="user_identity"></span>.
 
   <p>Ваш уровень доступа: <span class="user_rlevel"></span>. Поменять ваш уровень
      доступа может пользователь с уровнем, большим, чем у вас.
@@ -71,12 +70,11 @@
       ret = '<span id="level_' + user.alias + '">'
             + get_rlevel(user.level) + '</span>&nbsp;';
       if (user.level_hints){ ret = ret
-           + '<img src="http://slazav.mccme.ru/eventdb/edit2.png"'
+           + '<img src="RESDIR/edit2.png"'
            + ' alt="редактировать"'
            + ' onclick="ch_level_form(\'' + user.alias + '\')"> '
            + '<select style="display:none"'
            + ' onchange="ch_level_do(\'' + user.alias + '\')"'
-           + ' name="' + user.identity + '"'
            + ' id="level_form_' + user.alias + '">';
         for (var i in user.level_hints){
           var l = user.level_hints[i];
@@ -96,12 +94,10 @@
       form.style.display = form.style.display=="inline"? "none":"inline";
     }
 
-    // ch_alias request + update all aliases on the page
+    // ch_level request + update all levels on the page
     function ch_level_do(alias){
       var form = document.getElementById('level_form_' + alias);
-      var id  = form.name;
-      var lev = form.value;
-      do_request('set_level "' + id + '" ' + lev, function(user){
+      do_request('set_level "' + alias + '" ' + form.value, function(user){
         a = document.getElementById('level_' + user.alias);
         a.innerHTML = get_rlevel(user.level);
       });
@@ -117,14 +113,16 @@
           var btn = document.getElementById('user_button');
           btn.value="скрыть";
           tab.style.display="inline";
-          tab.innerHTML='<tr><th>пользователь</th>'
-                       +'    <th>имя на сайте</th>'
-                       +'    <th>уровень</th>'
+          tab.innerHTML='<tr>'
+                       +'<th>пользователь</th>'
+                       +'<th>аккаунты</th>'
+                       +' <th>уровень</th>'
                        +'</tr>';
           for (var key in users){
             tab.innerHTML = tab.innerHTML
-              + '<tr><td>' + user_identity(users[key]) + '</td>'
+              + '<tr>'
               + '<td><b>' + users[key].alias + '</b></td>'
+              + '<td>' + user_faces(users[key],'<br>') + '</td>'
               + '<td>' + level_form(users[key]) + '</td>'
               + '</tr>';
           }

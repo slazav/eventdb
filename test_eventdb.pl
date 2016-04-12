@@ -83,19 +83,19 @@ run_test('set_alias sla', $o1->{session}, $r1);
 run_test('set_alias sla', $o4->{session}, '{"error_type":"set_alias","error_message":"alias exists"}');
 
 # set level
-run_test("set_level \"$o1->{id}\" 0", $o1->{session}, '{"error_type":"set_level","error_message":"bad level value"}');
-run_test("set_level \"$o4->{id}\" -2", $o1->{session}, '{"error_type":"set_level","error_message":"bad level value"}');
-run_test("set_level \"$o4->{id}\"  3", $o1->{session}, '{"error_type":"set_level","error_message":"bad level value"}');
+run_test("set_level sla 0", $o1->{session}, '{"error_type":"set_level","error_message":"bad level value"}');
+run_test("set_level user01 -2", $o1->{session}, '{"error_type":"set_level","error_message":"bad level value"}');
+run_test("set_level user01  3", $o1->{session}, '{"error_type":"set_level","error_message":"bad level value"}');
 
 my $r3a=$r3;
 $r3a=~s/, \"session\": \"[^\"]*\"//;
 $r3a=~s/, \"stime\": \d*//;
 $r3a=~s/\"level\": [\d-]*/\"level\": -1/;
-run_test("set_level \"$o4->{id}\" -1", $o1->{session}, $r3a);
+run_test("set_level user01 -1", $o1->{session}, $r3a);
 $r3a=~s/\"level\": [\d-]*/\"level\": 2/;
-run_test("set_level \"$o4->{id}\"  2", $o1->{session}, $r3a);
+run_test("set_level user01  2", $o1->{session}, $r3a);
 $r3a=~s/\"level\": [\d-]*/\"level\": 0/;
-run_test("set_level \"$o4->{id}\"  0", $o1->{session}, $r3a);
+run_test("set_level user01  0", $o1->{session}, $r3a);
 
 # logout
 run_test('my_info', $o1->{session}, $r1);

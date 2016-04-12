@@ -1,6 +1,6 @@
 //
 var providers = 'livejournal,facebook,vkontakte,yandex,google';
-var evdb_url = 'http://slazav.mccme.ru/perl/auth3s.pl';
+var evdb_url = 'http://MYHOST/EVDB_CGI';
 var lgnz_url = 'https://loginza.ru/api/widget?token_url=' + evdb_url
              + '&providers_set=' + providers;
 
@@ -9,7 +9,11 @@ function do_request(action, callback){
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (xhttp.readyState == 4 && xhttp.status == 200) {
-      var data = JSON.parse(xhttp.responseText);
+      if (xhttp.responseText == ""){ return; }
+      try {
+        var data = JSON.parse(xhttp.responseText);
+      }
+      catch(e){ alert(e + "\n" + xhttp.responseText); }
       if (data.error_type){ process_err(data); }
       else { callback(data);}
     }
@@ -24,12 +28,6 @@ function process_err(data){
   alert(data.error_type + ": " + data.error_message);
 }
 
-// print user identity
-function user_identity(user){
-  return '<b><a class="nd" href="' + user.identity + '">'
-       + get_ppic(user.provider) + '&nbsp;'
-       + user.full_name + '</a></b>';
-}
 
 // fill user data
 function update_user_info(my_info){
@@ -37,7 +35,7 @@ function update_user_info(my_info){
   var name_block = 'inline';
   var list_block = 'inline';
   if (my_info.session && my_info.alias){
-    lform.innerHTML = '<a href="user.htm"><span class="user_alias"></span></a> '
+    lform.innerHTML = '<a href="USERHTM"><span class="user_alias"></span></a> '
        + '<input type="submit" value="выйти" '
        + 'name="LogOut" onclick="do_logout()"/>';
     a = document.getElementsByClassName('user_alias');
@@ -48,8 +46,7 @@ function update_user_info(my_info){
       a[i].innerHTML = get_rlevel(my_info.level); }
     a = document.getElementsByClassName('user_identity');
     for (var i=0; i < a.length; i++){
-      a[i].innerHTML = user_identity(my_info); }
-
+      a[i].innerHTML = user_faces(my_info, ', '); }
     if (my_info.level<0) {list_block='none';}
 
   } else {
@@ -77,19 +74,19 @@ function do_init(){
 function do_logout(){
   do_request('logout', function(info){
     document.cookie = "SESSION=";
-    window.location.replace("main.htm")
+    window.location.replace("MAINHTM")
   });
 }
 
 function get_ppic(pr){
   var a = '<img style="margin-bottom:-2px;" src="';
   var b = '">';
-  if (pr == 'vk') return a + 'http://slazav.mccme.ru/eventdb/vk.png' + b;
-  if (pr == 'lj') return a + 'http://slazav.mccme.ru/eventdb/lj.gif' + b;
-  if (pr == 'fb') return a + 'http://slazav.mccme.ru/eventdb/fb.png' + b;
-  if (pr == 'yandex') return a + 'http://slazav.mccme.ru/eventdb/ya.png' + b;
-  if (pr == 'google') return a + 'http://slazav.mccme.ru/eventdb/go.png' + b;
-  if (pr == 'gplus')  return a + 'http://slazav.mccme.ru/eventdb/gp.png' + b;
+  if (pr == 'vk') return a + 'RESDIR/vk.png' + b;
+  if (pr == 'lj') return a + 'RESDIR/lj.gif' + b;
+  if (pr == 'fb') return a + 'RESDIR/fb.png' + b;
+  if (pr == 'yandex') return a + 'RESDIR/ya.png' + b;
+  if (pr == 'google') return a + 'RESDIR/go.png' + b;
+  if (pr == 'gplus')  return a + 'RESDIR/gp.png' + b;
   return "";
 }
 
@@ -100,4 +97,20 @@ function get_rlevel(l){
   if (l == 2) return 'администратор';
   if (l == 3) return 'самый главный';
   return null;
+}
+
+// print user face
+function user_face(face){
+  return '<b><a class="nd" href="' + face.id + '">'
+       + get_ppic(face.site) + '&nbsp;'
+       + face.name + '</a></b>';
+}
+
+// print user faces
+function user_faces(user, sep){
+  var ret="";
+  for (var i=0; i<user.faces.length; i++){
+    ret += (i==0?"":sep) + user_face(user.faces[i]);
+  }
+  return ret;
 }

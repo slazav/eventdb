@@ -4,9 +4,10 @@ use CGI   ':standard';
 use HTTP::Tiny;
 use JSON;
 
-my $evdb_prog="/usr/home/slazav/eventdb/eventdb";
+my $evdb_prog="EVDB_SRV";
 my $providers="livejournal,facebook,vkontakte,yandex,google";
-my $url="http://slazav.mccme.ru/perl/auth3.pl";
+my $myhost = 'MYHOST';
+my $url="http://MYHOST/EVDB_CGI";
 
 my $token   = param('token') || '';
 my $session = param('session') || cookie('SESSION') || '';
@@ -22,7 +23,7 @@ if ($action eq ''){
   my $data  = decode_json($out);
   $session = $data->{session} || '';
   $cookie = cookie(-name=>'SESSION', -value=>$session,
-                   -expires=>'+1y', -host=>'slazav.mccme.ru') if $session;
+                   -expires=>'+1y', -host=>$myhost) if $session;
   if ($ret){
     print redirect (-uri=>$ret, -cookie=>$cookie);
     exit 0;
@@ -32,7 +33,7 @@ if ($action eq ''){
 elsif ($action eq 'logout'){
   $out=qx(printf "%s" "$session" | $evdb_prog $action 2>/dev/null) || '';
   $cookie = cookie(-name=>'SESSION',
-                   -expires=>'-1s', -host=>'slazav.mccme.ru');
+                   -expires=>'-1s', -host=>$myhost);
 }
 
 else {

@@ -3,5 +3,6 @@ eventdb
 sync
 
 jansson
+db
 data
 file

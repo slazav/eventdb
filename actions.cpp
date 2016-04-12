@@ -97,6 +97,10 @@ class UserDB : public JsonDB{
     json_int_t i = 0;
     return secondary_get("faces", s)[i];
   }
+  Json get_by_alias(const string & s){
+    json_int_t i = 0;
+    return secondary_get("alias", s)[i];
+  }
 };
 
 
@@ -251,7 +255,7 @@ do_set_level(const CFG & cfg, int argc, char **argv){
 
   Err("set_level");
   check_args(argc, 2);
-  const char *face2_id  = argv[1];
+  const char *alias2  = argv[1];
   int level = atoi(argv[2]);
 
   /* Get user information. Empty session is an error */
@@ -261,7 +265,7 @@ do_set_level(const CFG & cfg, int argc, char **argv){
   if (!user) throw Err() << "authentication error";
 
   /* user which we want to change */
-  Json user2 = udb.get_by_face(face2_id);
+  Json user2 = udb.get_by_alias(alias2);
   if (!user2) throw Err() << "no such user";
 
   // check permissions
