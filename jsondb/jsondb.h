@@ -95,7 +95,7 @@ class JsonDB{
          const int flags_=0);
 
   /************************************/
-  // Non-json operations
+  // database operations
 
   // check if the database is empty
   bool is_empty();
@@ -125,6 +125,9 @@ class JsonDB{
   Json get(const std::string & skey) const;
   Json get(const json_int_t ikey) const;
 
+  // delete functions
+  void del(const json_int_t ikey);
+  void del(const std::string & skey);
 
   /************************************/
   // get all the database entries as a json array

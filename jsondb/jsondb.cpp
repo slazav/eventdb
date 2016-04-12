@@ -264,6 +264,21 @@ JsonDB::get(const std::string & skey) const{
   return Json::load_string((const char *)val.data);
 }
 
+// delete functions
+void
+JsonDB::del(const json_int_t ikey){
+  if (!intkeys) _dberr("not an integer-key database");
+  DBT key = mk_dbt(&ikey);
+  int ret = dbp->del(dbp, NULL, &key, 0);
+  if (ret != 0) _dberr(ret);
+}
+void
+JsonDB::del(const std::string & skey){
+  if (intkeys) _dberr("not a string-key database");
+  DBT key = mk_dbt(skey);
+  int ret = dbp->del(dbp, NULL, &key, 0);
+  if (ret != 0) _dberr(ret);
+}
 
 /********************************************************************/
 

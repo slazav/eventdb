@@ -85,6 +85,10 @@ main() {
       db.put(j4);
       db.put(j5);
 
+      db.del(6);
+      ASSERT_FALSE(db.exists(6), "exist key6");
+      db.put(j5);
+
       try{
         Json j = Json::load_string("{\"names\": \"1\", \"unames\": 2, \"id\":-1}");
         db.put(j);
@@ -221,6 +225,10 @@ main() {
       j4.set("id","e5");
       j5.set("id","e6");
       db.put(j4);
+      db.put(j5);
+
+      db.del("e6");
+      ASSERT_FALSE(db.exists("e6"), "exist key4");
       db.put(j5);
 
       try{
