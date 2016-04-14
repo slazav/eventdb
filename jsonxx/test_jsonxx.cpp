@@ -21,11 +21,13 @@
 #define ASSERT_NE(lhs, rhs, m) ASSERT_OP(lhs, rhs, !=, m)
 #define ASSERT_TRUE(p, m) ASSERT_OP(p, true, ==, m)
 #define ASSERT_FALSE(p, m) ASSERT_OP(p, true, !=, m)
-#define ASSERT_EX(p, m)\
-    try { p;\
-      std::cerr << (m) << std::endl;\
+#define ASSERT_EX(lhs, rhs, m)\
+    try { lhs;\
+      std::cerr << (m) << ": no exception" << std::endl;\
       return 1;\
-    } catch (Json::Err e) {}
+    } catch (Json::Err e) {\
+      ASSERT_EQ(e.json(), rhs, m);\
+    }
 
 int main() {
   try{
@@ -48,6 +50,11 @@ int main() {
 
     Json eA1(eA);  // copy constructor
     Json eA2 = eA; // assignment
+
+    // exceptions
+    ASSERT_EX(Json::load_file(""), "{\"error_type\": \"jsonxx\", \"error_message\":\"unable to open : No such file or directory\"}", "no file");
+    ASSERT_EX(Json::load_file("test_jsonxx.cpp"), "{\"error_type\": \"jsonxx\", \"error_message\":\"'[' or '{' expected near '#'\"}", "bad file");
+    ASSERT_EX(Json::load_string("{"), "{\"error_type\": \"jsonxx\", \"error_message\":\"string or '}' expected near end of file\"}", "bad json");
 
     // check types
     ASSERT_EQ(e0.type(), JSON_NULL,    "e0 wrong type");

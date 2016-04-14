@@ -106,7 +106,7 @@ class Json{
   static Json load_string(const std::string & s, const size_t flags=0){
     json_error_t e;
     Json ret(json_loadb(s.data(), s.length(), flags, &e));
-    if (!ret.json) throw Err() << e.text;
+    if (!ret) throw Err() << e.text;
     return ret;
   }
 
@@ -114,7 +114,7 @@ class Json{
   static Json load_file(const std::string & f, const size_t flags=0){
     json_error_t e;
     Json ret(json_load_file(f.c_str(), flags, &e));
-    if (ret.json==NULL) throw Err() << e.text;
+    if (!ret) throw Err() << e.text;
     return ret;
   }
 
