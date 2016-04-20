@@ -3,31 +3,8 @@
 #include <malloc.h>
 #include <map>
 
+#include "tests.h"
 #include "jsonxx.h"
-
-// This tast based on https://github.com/bvakili-evault/janssonxx code
-
-#define ASSERT_OP(lhs, rhs, op, m) {\
-    if(!((lhs) op (rhs))) { \
-      std::cerr << std::boolalpha; \
-      std::cerr << __FILE__ << '[' << __LINE__ << "]: ERROR: " << (m) << std::endl; \
-      std::cerr << "\ttest:   " << #lhs << ' ' << #op << ' ' << #rhs << std::endl; \
-      std::cerr << "\tlhs: " << (lhs) << std::endl; \
-      std::cerr << "\trhs: " << (rhs) << std::endl; \
-      return 1; \
-    } \
-  }
-#define ASSERT_EQ(lhs, rhs, m) ASSERT_OP(lhs, rhs, ==, m)
-#define ASSERT_NE(lhs, rhs, m) ASSERT_OP(lhs, rhs, !=, m)
-#define ASSERT_TRUE(p, m) ASSERT_OP(p, true, ==, m)
-#define ASSERT_FALSE(p, m) ASSERT_OP(p, true, !=, m)
-#define ASSERT_EX(lhs, rhs, m)\
-    try { lhs;\
-      std::cerr << (m) << ": no exception" << std::endl;\
-      return 1;\
-    } catch (Json::Err e) {\
-      ASSERT_EQ(e.json(), rhs, m);\
-    }
 
 int main() {
   try{
@@ -52,9 +29,9 @@ int main() {
     Json eA2 = eA; // assignment
 
     // exceptions
-    ASSERT_EX(Json::load_file(""), "{\"error_type\": \"jsonxx\", \"error_message\":\"unable to open : No such file or directory\"}", "no file");
-    ASSERT_EX(Json::load_file("test_jsonxx.cpp"), "{\"error_type\": \"jsonxx\", \"error_message\":\"'[' or '{' expected near '#'\"}", "bad file");
-    ASSERT_EX(Json::load_string("{"), "{\"error_type\": \"jsonxx\", \"error_message\":\"string or '}' expected near end of file\"}", "bad json");
+    ASSERT_EX(Json::load_file(""), "unable to open : No such file or directory", "no file");
+    ASSERT_EX(Json::load_file("test_jsonxx.cpp"), "'[' or '{' expected near '#'", "bad file");
+    ASSERT_EX(Json::load_string("{"), "string or '}' expected near end of file", "bad json");
 
     // check types
     ASSERT_EQ(e0.type(), JSON_NULL,    "e0 wrong type");
@@ -227,7 +204,6 @@ int main() {
     ASSERT_TRUE(e8["m2"].is_integer(), "e8[m2]");
     ASSERT_TRUE(e8["m3"].is_string(),  "e8[m3]");
     ASSERT_TRUE(e8["m4"].is_string(),  "e8[m4]");
-   
 
     // work with array
 
@@ -252,8 +228,7 @@ int main() {
     e9.append(e6); // false
 
     ASSERT_EQ(e9.size(), 7, "e9 has wrong size");
-    int i=0; // fight ambiguously overloaded []
-    ASSERT_EQ(e9[i].as_string(), "",     "array");
+    ASSERT_EQ(e9[(size_t)0].as_string(), "",     "array");
     ASSERT_EQ(e9[1].as_string(), "text", "array");
     ASSERT_EQ(e9[2].as_bool(),   true,   "array");
     ASSERT_EQ(e9[3].as_string(), "", "array");

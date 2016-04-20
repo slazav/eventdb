@@ -2,6 +2,7 @@
 #define JSONXX_H
 
 #include <string>
+#include <iostream>
 #include <sstream>
 #include <cassert>
 #include <jansson.h>
@@ -234,9 +235,10 @@ class Json{
       throw Err() << "json_object_del: not found"; }
 
   // same, but with std::string keys
-  void set(const std::string &key, const Json & val){ set(key.c_str(), val); }
   Json get(const std::string &key) const { return get(key.c_str()); }
   Json operator[](const std::string &key) const { return get(key.c_str()); }
+  bool exists(const std::string &key) const { return exists(key.c_str()); }
+  void set(const std::string &key, const Json & val){ set(key.c_str(), val); }
   void del(const std::string &key){ del(key.c_str()); }
 
   // set functions for various types
@@ -276,9 +278,9 @@ class Json{
       return iterator(json, iter0);}
     operator bool() const { return iter!=NULL; }
   };
-  iterator begin(){
+  iterator begin() const{
     return iterator(json, json_object_iter(json)); }
-  iterator end()  {
+  iterator end() const  {
     return iterator(json); }
 
   /************************************/
@@ -308,6 +310,13 @@ class Json{
   void extend(const Json & j){
     if (json_array_extend(json, j.json))
       throw Err() << "array_extend error"; }
+
+  /************************************/
+  // validate a json using special mask
+  void validate(const Json & mask) const;
+
+  void validate(const char *str) const{
+    validate(Json::load_string(str)); }
 
 };
 
