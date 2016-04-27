@@ -51,10 +51,10 @@ run_test('my_info', "x", '{"error_type": "jsondb", "error_message":"user.db: No 
 
 # login test users (vk, fb, lj)
 # first user gets admin rights
-my $r1 = '{"id": 1, "faces": [{"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "test", "stime": 1234567890, "session": "-"}';
-my $r2 = '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}], "level": 0, "alias": "TestUser", "stime": 1234567890, "session": "-"}';
+my $r1 = '{"id": 1, "faces": [{"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "sface": 0, "level": 3, "alias": "test", "stime": 1234567890, "session": "-"}';
+my $r2 = '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}], "sface": 0, "level": 0, "alias": "TestUser", "stime": 1234567890, "session": "-"}';
 # note the auto alias user01
-my $r3 = '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 0, "alias": "user01", "stime": 1234567890, "session": "-"}';
+my $r3 = '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "sface": 0, "level": 0, "alias": "user01", "stime": 1234567890, "session": "-"}';
 
 my $o1 = run_test('login', '382512edfa7149b79b910cf6227e3e16', $r1);
 my $o2 = run_test('login', '7202c11c442dbd1e7c7f9c33e2ee61d9', $r2);
@@ -117,29 +117,29 @@ $o3 = run_test('login', '6222d12c54a233deae789c3ce22eb1d9', $r3);
 
 # add - delete
 run_test('joinreq_add user01', $o1->{session}, '{}');
-run_test('my_info', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 0, "alias": "user01", "stime": 1234567890, "session": "-", "joinreq": [{"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}]}');
+run_test('my_info', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "sface": 0, "level": 0, "alias": "user01", "stime": 1234567890, "session": "-", "joinreq": [{"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}]}');
 run_test('my_info', $o1->{session}, $r1);
 
 run_test('joinreq_add user01', $o1->{session}, '{}');
-run_test('joinreq_delete 0', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 0, "alias": "user01", "stime": 1234567890, "session": "-"}');
+run_test('joinreq_delete 0', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "sface": 0, "level": 0, "alias": "user01", "stime": 1234567890, "session": "-"}');
 run_test('my_info', $o1->{session}, $r1);
 run_test('my_info', $o3->{session}, $r3);
 
 # 1->3
 run_test('joinreq_add user01', $o1->{session}, '{}');
-run_test('joinreq_accept 0', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "user01", "stime": 1234567890, "session": "-"}');
-run_test('my_info', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "user01", "stime": 1234567890, "session": "-"}');
+run_test('joinreq_accept 0', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "sface": 0, "level": 3, "alias": "user01", "stime": 1234567890, "session": "-"}');
+run_test('my_info', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "sface": 0, "level": 3, "alias": "user01", "stime": 1234567890, "session": "-"}');
 
 # user o1 does not exists any more
 run_test('my_info', $o1->{session}, '{"error_type":"my_info","error_message":"authentication error"}');
 
 # 3->2
 run_test('joinreq_add TestUser', $o3->{session}, '{}');
-run_test('my_info', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}], "level": 0, "alias": "TestUser", "stime": 1234567890, "session": "-", "joinreq": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}]}');
+run_test('my_info', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}], "sface": 0, "level": 0, "alias": "TestUser", "stime": 1234567890, "session": "-", "joinreq": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}]}');
 
 #accept both
-run_test('joinreq_accept 1', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "TestUser", "stime": 1234567890, "session": "-", "joinreq": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}]}');
-run_test('joinreq_accept 0', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}, {"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 3, "alias": "TestUser", "stime": 1234567890, "session": "-"}');
+run_test('joinreq_accept 1', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "sface": 0, "level": 3, "alias": "TestUser", "stime": 1234567890, "session": "-", "joinreq": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}]}');
+run_test('joinreq_accept 0', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}, {"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "sface": 0, "level": 3, "alias": "TestUser", "stime": 1234567890, "session": "-"}');
 
-run_test('my_info', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}, {"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 3, "alias": "TestUser", "stime": 1234567890, "session": "-"}');
+run_test('my_info', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}, {"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "sface": 0, "level": 3, "alias": "TestUser", "stime": 1234567890, "session": "-"}');
 

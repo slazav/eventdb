@@ -145,14 +145,16 @@ do_login(const CFG & cfg, int argc, char **argv){
 
     /* replace the face (in case we have a changed name) */
     for (int i=0; i<user["faces"].size(); i++){
-      if (user["faces"][i]["id"].as_string() == face_id)
-        user["faces"].set(i, face);
+      if (user["faces"][i]["id"].as_string() != face_id) continue;
+      user["faces"].set(i, face);
+      user.set("sface", i);
     }
   }
   else{ /* new user */
     user.set("id", -1); // negative id if we want to add new one
     user.set("faces", Json::array());
     user["faces"].append(face);
+    user.set("sface", 0);
 
     // auto level: for the very first user level="admin"
     user.set("level", udb.is_empty()? LEVEL_SUPER:LEVEL_NORM);
@@ -318,6 +320,7 @@ do_user_list(const CFG & cfg, int argc, char **argv){
     // remove session information
     if (ret[i].exists("session")) ret[i].del("session");
     if (ret[i].exists("stime"))   ret[i].del("stime");
+    if (ret[i].exists("sface"))   ret[i].del("sface");
 
     // add level_hints: how can I change the level
     int ln = ret[i]["level"].as_integer();
