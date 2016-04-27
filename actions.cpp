@@ -107,16 +107,13 @@ class UserDB : public JsonDB{
     secondary_open("faces", false);
   }
   Json get_by_session(const string & s){
-    json_int_t i = 0;
-    return secondary_get("session", s)[i];
+    return secondary_get("session", s)[(size_t)0];
   }
   Json get_by_face(const string & s){
-    json_int_t i = 0;
-    return secondary_get("faces", s)[i];
+    return secondary_get("faces", s)[(size_t)0];
   }
   Json get_by_alias(const string & s){
-    json_int_t i = 0;
-    return secondary_get("alias", s)[i];
+    return secondary_get("alias", s)[(size_t)0];
   }
 };
 
@@ -373,6 +370,8 @@ do_joinreq_delete(const CFG & cfg, int argc, char **argv){
   user["joinreq"].del(num);
   if (user["joinreq"].size()==0) user.del("joinreq");
   udb.put(user);
+
+  throw Exc() << user.save_string(JSON_OUT_FLAGS);
 }
 
 void
@@ -411,6 +410,8 @@ do_joinreq_accept(const CFG & cfg, int argc, char **argv){
   user["joinreq"].del(num);
   if (user["joinreq"].size()==0) user.del("joinreq");
   udb.put(user);
+
+  throw Exc() << user.save_string(JSON_OUT_FLAGS);
 }
 
 
