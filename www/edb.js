@@ -117,9 +117,11 @@ function full_view_model(data) {
     self.level(data.level);
     self.faces(ko.utils.arrayMap(data.faces, make_face_model));
     self.joinreq(ko.utils.arrayMap(data.joinreq, make_face_model));
+    // hide the user list
+    self.user_list(false);
+    // update new_alias
+    self.new_alias(self.alias());
   };
-  // Fill the data in the beginning
-  update_data(data);
 
   // Make an observable with user level in Russian.
   self.rlevel = ko.pureComputed(
@@ -201,6 +203,10 @@ function full_view_model(data) {
     do_request('set_level "' + user.alias() + '" ' + user.new_level(),
       function(u){ user.level(u.level); user.level_form(false);});
   }
+
+  //////////////////////////////////////////////
+  // Fill the data
+  update_data(data);
 }
 
 

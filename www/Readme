@@ -3,6 +3,7 @@ following variables are substituted:
 
 RESDIR  -- folder for js, css images on the server
 MAINHTM -- main.htm page
+MAPHTM  -- map.htm page
 USERHTM -- user.htm page
 MYHOST  -- host name
 EVDB_CGI -- name of ther cgi script

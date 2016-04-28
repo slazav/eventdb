@@ -9,9 +9,10 @@
 
   <!-- Top menu, login/logout buttons -->
   <table width="100%" border=0 class="main_menu"><tr>
-  <td class=hh width="50%"><a href="MAINHTM"><b>Главная</b></a></td>
-  <td class=hh width="50%" align=right>
-    <a href="USERHTM"><b data-bind="text:alias"></b></a>
+  <td class=hh width="0%"><a href="MAINHTM">Главная</a></td>
+  <td class=hh width="0%"><a href="MAPHTM">Карта</a></td>
+  <td class=hh align=right>
+    <a href="USERHTM" data-bind="text:alias"></a>
     <input type=submit value="выйти" style="display:none"
        data-bind='visible: is_logged, click: logout'>
     <a style="display:none"
@@ -19,6 +20,8 @@
   </td>
   </tr></table>
   <hr>
+
+  <h4>Главная страница, пока тут ничего нет</h4>
 
 </body>
 </html>

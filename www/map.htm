@@ -1,0 +1,42 @@
+<html>
+<head>
+  <link rel="stylesheet" href="RESDIR/edb.css" type="text/css"/>
+  <link rel="stylesheet" href="RESDIR/leaflet.css" type="text/css"/>
+  <script src="RESDIR/leaflet.js"></script>
+  <script src="RESDIR/knockout-3.4.0.js"></script>
+
+  <!-- I use signals.js + crossroads.js + hasher.js
+      to make client-side navigation. See:
+      https://millermedeiros.github.io/crossroads.js/ -->
+  <script src="RESDIR/signals.min.js"></script>
+  <script src="RESDIR/crossroads.min.js"></script>
+  <script src="RESDIR/hasher.min.js"></script>
+  <script src="RESDIR/edb.js"></script>
+  <script src="RESDIR/map.js"></script>
+
+  <style type="text/css">
+    html, body {height: 100%}
+    #mapid {padding-top: 0px;
+            height:80%;}
+  </style>
+</head>
+<body onload="main_on_load(); map_on_load('mapid')">
+
+  <!-- Top menu, login/logout buttons -->
+  <table width="100%" border=0 class="main_menu"><tr>
+  <td class=hh width="0%"><a href="MAINHTM">Главная</a></td>
+  <td class=hh width="0%"><a href="MAPHTM">Карта</a></td>
+  <td class=hh align=right>
+    <a href="USERHTM" data-bind="text:alias"></a>
+    <input type=submit value="выйти" style="display:none"
+       data-bind='visible: is_logged, click: logout'>
+    <a style="display:none"
+       data-bind='visible: !is_logged(), attr: {href: lgnz_url}'>войти</a>
+  </td>
+  </tr></table>
+  <hr>
+
+  <!-- Map object -->
+  <div id="mapid"></div>
+</body>
+</html>
