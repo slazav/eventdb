@@ -469,12 +469,13 @@ jsonbd_key_extractor(DB *secdb, const DBT *pkey,
   unsigned int i;
   for (it=v.begin(), i=0; it!=v.end(); it++, i++){
     /* we need to allocate memory for data! */
-    char * str = (char *)malloc(it->length());
+    char * str = (char *)malloc(it->length()+1);
     if (!str) throw JsonDB::Err() << "malloc error";
     strcpy(str, it->c_str());
     // std::cerr << "Extractor: " << key_name << " = " << str << "\n";
     outdbt[i].data = str;
     outdbt[i].size = strlen(str)+1;
+    outdbt[i].flags = DB_DBT_APPMALLOC;
   }
   skey->flags = DB_DBT_MULTIPLE | DB_DBT_APPMALLOC;
   skey->data = outdbt;
