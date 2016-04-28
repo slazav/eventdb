@@ -208,13 +208,19 @@ do_my_info(const CFG & cfg, int argc, char **argv){
   if (strlen(sess)==0) // no session
     throw Exc() << get_anon().save_string(JSON_OUT_FLAGS);
 
-  UserDB udb(cfg, DB_RDONLY);
-  Json user = udb.get_by_session(sess);
-  clr_secret();
-  if (!user) // expired session
-    throw Exc() << get_anon().save_string(JSON_OUT_FLAGS);
+  try {
+    UserDB udb(cfg, DB_RDONLY);
+    Json user = udb.get_by_session(sess);
+    clr_secret();
 
-  throw Exc() << user.save_string(JSON_OUT_FLAGS);
+    if (!user) // expired session
+      throw Exc() << get_anon().save_string(JSON_OUT_FLAGS);
+
+    throw Exc() << user.save_string(JSON_OUT_FLAGS);
+  }
+  catch(JsonDB::Err e){ // in case of DB error we also return an anon user.
+    throw Exc() << get_anon().save_string(JSON_OUT_FLAGS);
+  }
 }
 
 /********************************************************************/
