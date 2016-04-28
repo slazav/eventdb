@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include <cstdio> /* sprintf, fgets */
 #include <cstring> /* memcpy, memset */
@@ -415,6 +416,23 @@ do_joinreq_accept(const CFG & cfg, int argc, char **argv){
   udb.put(user);
 
   throw Exc() << user.save_string(JSON_OUT_FLAGS);
+}
+
+/********************************************************************/
+// dump databases -- can not be called from www interface
+void
+local_dump_db(const CFG & cfg, int argc, char **argv){
+
+  /* Get user information. Empty session is an error */
+  UserDB udb(cfg);
+
+  const char *user_keys[] = {"", "session", "alias", "faces", NULL};
+  for (const char **c = user_keys; *c!=NULL; c++){
+    string fname = udb.get_fname() + (strlen(*c)?".":"") + *c + ".txt";
+    ofstream out(fname.c_str());
+    out << udb.get_all(*c).save_string(JSON_INDENT(2) | JSON_PRESERVE_ORDER);
+  }
+
 }
 
 

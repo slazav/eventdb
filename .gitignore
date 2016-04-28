@@ -1,5 +1,6 @@
 *.o
 eventdb
+dump_db
 sync
 
 jansson

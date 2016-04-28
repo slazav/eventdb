@@ -7,6 +7,8 @@
 #include "jsonxx/jsonxx.h"
 #include "jsondb/jsondb.h"
 
+#include <sys/stat.h> // umask
+
 #ifndef CFG_FILE
 #define CFG_FILE "./config.json"
 #endif
@@ -31,6 +33,8 @@ main(int argc, char **argv){
     if (argc<2) throw Err("eventdb") << "Action is not specified";
     std::string action(argv[1]);
     cfg.read(CFG_FILE); /* read parameters from the config file */
+
+    umask(066);
 
     // log the action
     std::string l("action:");

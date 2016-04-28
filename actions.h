@@ -26,4 +26,6 @@ action_func do_ev_new,
             do_ev_show,
             do_ev_list;
 
+action_func local_dump_db;
+
 #endif
