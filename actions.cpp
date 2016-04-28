@@ -69,7 +69,6 @@ string make_session(){
 Json
 get_anon(){
   Json ret = Json::object();
-  ret.set("alias",    "anon");
   ret.set("level",    LEVEL_ANON);
   return ret;
 }
@@ -205,13 +204,14 @@ do_my_info(const CFG & cfg, int argc, char **argv){
   // In this case there is no need for opening db,
   // We just return an anonimous user
   char *sess = get_secret();
-  if (strlen(sess)==0)
+  if (strlen(sess)==0) // no session
     throw Exc() << get_anon().save_string(JSON_OUT_FLAGS);
 
   UserDB udb(cfg, DB_RDONLY);
   Json user = udb.get_by_session(sess);
   clr_secret();
-  if (!user) throw Err() << "authentication error";
+  if (!user) // expired session
+    throw Exc() << get_anon().save_string(JSON_OUT_FLAGS);
 
   throw Exc() << user.save_string(JSON_OUT_FLAGS);
 }
