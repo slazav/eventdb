@@ -100,6 +100,9 @@ class JsonDB{
   // check if the database is empty
   bool is_empty();
 
+  // check if the database is empty
+  std::string get_fname() {return fname;}
+
   // for integer IDs we can get the last one
   // (or 0 if database is empty).
   json_int_t get_last_id();

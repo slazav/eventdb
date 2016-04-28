@@ -47,6 +47,8 @@ main() {
       db.secondary_open("names",  true);  // duplicated entries allowed
       db.secondary_open("unames", false); // duplicated entries not allowed
 
+      ASSERT_EQ(db.get_fname(), "test1", "db name");
+
       ASSERT_TRUE(db.is_empty(), "db is not empty!");
       Json j1 = Json::load_string(c1);
       Json j2 = Json::load_string(c2);
