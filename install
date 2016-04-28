@@ -1,0 +1,49 @@
+#!/bin/sh -eu
+
+echo "$0"
+
+[ "$(basename $0)" == "install-test" ] && TEST='_test' || TEST=''
+
+WWWDEST=WWW
+SRVDEST=SRV$TEST
+
+SEDCMD="s|RESDIR|edb$TEST|g
+        s|MAINHTM|main$TEST.htm|g
+        s|USERHTM|user$TEST.htm|g
+        s|MYHOST|slazav.mccme.ru|g
+        s|EVDB_CGI|perl/edb$TEST.pl|g
+        s|EVDB_SRV|$(pwd)/$SRVDEST/eventdb|g"
+
+mkdir -p "$WWWDEST/edb$TEST"
+mkdir -p "$WWWDEST/perl"
+mkdir -p "$SRVDEST"
+
+for i in www/*.htm; do
+  sed -e "$SEDCMD" $i > $WWWDEST/$(basename "$i" ".htm")$TEST.htm
+done
+
+for i in www/*.js; do
+  sed -e "$SEDCMD" $i > $WWWDEST/edb$TEST/$(basename "$i")
+done
+
+for i in www/*.pl; do
+  dst=$WWWDEST/perl/$(basename "$i" ".pl")$TEST.pl
+  sed -e "$SEDCMD" $i > $dst
+  chmod 755 "$dst"
+done
+
+cp www/edb/* $WWWDEST/edb$TEST/
+
+gmake clean
+gmake --eval "CFG_FILE=$(pwd)/$SRVDEST/config.json" &&
+   cp eventdb $SRVDEST/ &&
+   chmod 4755 $SRVDEST/eventdb ||:
+
+sed  's|"./|"'$(pwd)'/'$SRVDEST'/|' config.json > $SRVDEST/config.json
+chmod 600 $SRVDEST/config.json
+
+mkdir -p $SRVDEST/data
+mkdir -p $SRVDEST/file
+
+touch $SRVDEST/data/log.txt
+chmod 600 $SRVDEST/data/log.txt
