@@ -138,6 +138,7 @@ main() {
 
       ASSERT_EQ(res0, exp0, "get_all");
 
+
     }
     // check secondary dbs
     {
@@ -167,6 +168,13 @@ main() {
       ASSERT_TRUE(db.secondary_exists("unames", "a2"), "secondary_exists - a2");
       ASSERT_FALSE(db.secondary_exists("names",   "z"), "secondary_exists - z");
       ASSERT_FALSE(db.secondary_exists("unames", "z2"), "secondary_exists - z2");
+
+      std::string res1 = db.get_all("names").save_string(JSON_PRESERVE_ORDER);
+      ASSERT_EQ(res1, "[{\"skey\": \"a\", \"pkey\": 1}, {\"skey\": \"a\", \"pkey\": 4}, {\"skey\": \"b\", \"pkey\": 1}, {\"skey\": \"c\", \"pkey\": 1}, {\"skey\": \"c\", \"pkey\": 2}, {\"skey\": \"c\", \"pkey\": 6}, {\"skey\": \"d\", \"pkey\": 2}]", "get_all");
+
+      std::string res2 = db.get_all("unames").save_string(JSON_PRESERVE_ORDER);
+      ASSERT_EQ(res2, "[{\"skey\": \"a1\", \"pkey\": 1}, {\"skey\": \"a2\", \"pkey\": 2}, {\"skey\": \"b1\", \"pkey\": 1}]", "get_all");
+
     }
 
     // add log entry
@@ -319,6 +327,12 @@ main() {
       ASSERT_TRUE(db.secondary_exists("unames", "a2"), "secondary_exists - a2");
       ASSERT_FALSE(db.secondary_exists("names",   "z"), "secondary_exists - z");
       ASSERT_FALSE(db.secondary_exists("unames", "z2"), "secondary_exists - z2");
+
+      std::string res1 = db.get_all("names").save_string(JSON_PRESERVE_ORDER);
+      ASSERT_EQ(res1, "[{\"skey\": \"a\", \"pkey\": \"e1\"}, {\"skey\": \"a\", \"pkey\": \"e4\"}, {\"skey\": \"b\", \"pkey\": \"e1\"}, {\"skey\": \"c\", \"pkey\": \"e1\"}, {\"skey\": \"c\", \"pkey\": \"e2\"}, {\"skey\": \"c\", \"pkey\": \"e6\"}, {\"skey\": \"d\", \"pkey\": \"e2\"}]", "get_all");
+
+      std::string res2 = db.get_all("unames").save_string(JSON_PRESERVE_ORDER);
+      ASSERT_EQ(res2, "[{\"skey\": \"a1\", \"pkey\": \"e1\"}, {\"skey\": \"a2\", \"pkey\": \"e2\"}, {\"skey\": \"b1\", \"pkey\": \"e1\"}]", "get_all");
 
     }
 

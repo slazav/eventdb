@@ -133,8 +133,9 @@ class JsonDB{
   void del(const std::string & skey);
 
   /************************************/
-  // get all the database entries as a json array
-  Json get_all();
+  // Get all the database entries as a json array.
+  // If key != "" then try a secondary db
+  Json get_all(const std::string & key = "");
 
   /************************************/
   /* Open a secondary database, associated with some key

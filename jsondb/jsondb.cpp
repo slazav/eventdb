@@ -284,18 +284,39 @@ JsonDB::del(const std::string & skey){
 
 // get all the database entries as a json array
 Json
-JsonDB::get_all(){
+JsonDB::get_all(const std::string & key){
   DBC *curs;
-  DBT key = mk_dbt();
-  DBT val = mk_dbt();
-  /* Get a cursor */
-  dbp->cursor(dbp, NULL, &curs, 0);
-  if (!curs) _dberr("can't get a cursor");
+  DBT skey = mk_dbt();
+  DBT pkey = mk_dbt();
+  DBT pval = mk_dbt();
   Json jj = Json::array();
-  int ret;
-  while ((ret=curs->get(curs, &key, &val, DB_NEXT))==0)
-    jj.append(Json::load_string((const char *)val.data));
-  curs->close(curs);
+
+  if (key == ""){
+    // Get a cursor
+    dbp->cursor(dbp, NULL, &curs, 0);
+    if (!curs) _dberr("can't get a cursor");
+    // Extract all entries
+    while (curs->get(curs, &pkey, &pval, DB_NEXT)==0)
+      jj.append(Json::load_string((const char *)pval.data));
+    curs->close(curs);
+  }
+  else {
+    // get secondary database for the key
+    if (sec_dbp.count(key)==0)
+      _dberr(std::string("no secondary database for the key: ") + key);
+    // Get a cursor
+    sec_dbp[key]->cursor(sec_dbp[key], NULL, &curs, 0);
+    if (!curs) _dberr("can't get a cursor");
+
+    while (curs->c_pget(curs, &skey, &pkey, &pval, DB_NEXT)==0){
+      Json o=Json::object();
+      o.set("skey", (const char *)skey.data);
+      if (intkeys) o.set("pkey", *(json_int_t *)pkey.data);
+      else         o.set("pkey", (const char *)pkey.data);
+      jj.append(o);
+    }
+    curs->close(curs);
+  }
   return jj;
 }
 
