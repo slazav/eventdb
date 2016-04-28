@@ -1,6 +1,7 @@
 <html>
 <head>
   <LINK href="RESDIR/edb.css" rel="stylesheet" type="text/css">
+  <script type="text/JavaScript" src="RESDIR/knockout-3.4.0.js"></script>
   <script type="text/JavaScript" src="RESDIR/edb.js"></script>
   <style>
     th {
@@ -10,178 +11,135 @@
   </style>
 </head>
 
-<body>
+<body onload="user_on_load()">
 
+  <!-- Top menu, login/logout buttons -->
   <table width="100%" border=0 class="main_menu"><tr>
-  <td class=hh width="50%"><a href="MAINHTM">Главная</a></td>
-  <td class=hh width="50%" align=right id=login_box></td>
+  <td class=hh width="50%"><a href="MAINHTM"><b>Главная</b></a></td>
+  <td class=hh width="50%" align=right>
+    <a href="USERHTM"><b data-bind="text:alias"></b></a>
+    <input type=submit value="выйти" style="display:none"
+       data-bind='visible: is_logged, click: logout'>
+    <a style="display:none"
+       data-bind='visible: !is_logged(), attr: {href: lgnz_url}'>войти</a>
+  </td>
   </tr></table>
   <hr>
 
   <h4>Добро пожаловать!</h4>
 
-  <script>
-    // open/close the set alias form
-    // fill it with a current alias name
-    function ch_alias_form(){
-      var form = document.getElementById('ch_alias_form');
-      form.value= document.getElementById('user_alias').innerHTML;
-      form.style.display = form.style.display=="inline"? "none":"inline";
-    }
-    // ch_alias request + update all aliases on the page
-    function ch_alias_do(){
-      var newal = document.getElementById('ch_alias_form').value;
-      do_request('set_alias ' + newal, function(my_info){
-          a = document.getElementsByClassName('user_alias');
-          for (var i=0; i < a.length; i++){ a[i].innerHTML = my_info.alias; }
-        });
-      ch_alias_form();
-    }
-  </script>
+  <!-- Change alias form -->
+  <span data-bind="if: alias">
+    <p>Ваше имя на этом сайте: <b data-bind="text: alias"></b>
+    <img src="RESDIR/edit2.png" alt="редактировать"
+         data-bind='click: sw_alias_form'>
+    <br>Вы можете поменять имя, нажав на картинку справа от него.
 
-  <span class="name_block" style="display:none">
-  <p>Ваше имя на этом сайте:
-     <b><span class="user_alias" id="user_alias"></span></b>
-     <img src="RESDIR/edit2.png"
-          onclick="ch_alias_form()" alt="редактировать">
-     <input id="ch_alias_form" type="text" style="display:none"
-            name="new_alias" onchange="ch_alias_do()"></span>
-  <br>Вы можете поменять имя, нажав на картинку справа от него.
-  <br>Имя может содержать от 2 до 20 символов: буквы, цифры, символы подчеркивания "_".
-  <br>Имя не может совпадать с именем другого пользователя.
+    <form style="display: none"
+        data-bind="visible: alias_form, submit: set_alias">
+    <font size="-1"> Изменить имя:
+    <input type="text" data-bind='value: new_alias'>
+    <br>Имя может содержать от 2 до 20 символов:
+        буквы, цифры, символы подчеркивания "_".
+    <br>Имя не может совпадать с именем другого пользователя.
+    </font>
+    </form>
+  </span>
 
+  <!-- Accounts list -->
+  <span data-bind="if: alias">
+    <p>Вы можете заходить сюда со своих аккаунтов в соцсетях:
+    <ul data-bind="foreach: faces"><li data-bind="html: html"></ul>
+  </span>
 
-  <script>
-    // open/close the set alias form
-    // fill it with a current alias name
-    function join_form(){
-      var form = document.getElementById('join_form');
-      form.style.display = form.style.display=="inline"? "none":"inline";
-    }
-    // ch_join add request
-    function join_add(){
-      var newal = document.getElementById('join_add').value;
-      do_request('joinreq_add ' + newal, function(my_info){
-        document.getElementById('join_add_text').style.display="inline";
+  <!-- Join accounts form -->
+  <span data-bind="if: alias">
+    <p>Если вы хотите настроить вход с других аккаунтов, нажмите на картинку:
+    <img src="RESDIR/edit2.png" alt="форма добавления аккаунтов"
+         data-bind='click: sw_join_form'>
 
-      });
-    }
-  </script>
-
-  <p>Вы можете заходить сюда со своих аккаунтов в соцсетях:
-  <br><span class="user_identity"></span>
-
-  <p>Если вы хотите настроить вход с других аккаунтов, нажмите на картинку:
-     <img src="RESDIR/edit2.png"
-          onclick="join_form()" alt="форма добавления аккаунтов">
-     <div id="join_form" style="display:none"><font size="-1">
-     <p>Чтобы добавить новый аккаунт, запомните имя пользователя, к которому вы
-        хотите его добавить.
-     <br>Зайдите под новым аккаунтом и в следующей форме введите это имя.
-     <br>Имя пользователя, к которому вы хотите присоединиться:
-        <input type="text" id="join_add" onchange="join_add()">
-        <font color="#800000" style="display:none" id="join_add_text">
+    <form style="display: none"
+        data-bind="visible: join_form, submit: joinreq_add">
+    <font size="-1">
+    <p>Чтобы присоединить данный аккаунт к уже существующему
+       пользователю, введите в следующей форме введите его имя.
+    <br>Этому пользователю будет отправлен запрос на присоединение:
+    <input type="text" data-bind='value: joinreq_name'>
+       <font color="#800000" style="display:none"
+             data-bind='visible: joinreq_done'>
         Запрос отправлен. </font>
-     <p>После того, как запрос будет отправлен, перелогинтесь обратно
-        с помощью первого аккаунта и примите (или отклоните) запрос.
-     <br><span class="user_joinreqs"></span>
-     <br>Будте внимательны, принимайте те запросы, которые вы отправляли, убедитесь,
-         что это ваш аккаунт.
-     </font></div>
+    <p>После того, как запрос будет отправлен, перелогинтесь
+       с помощью того аккаунта, к которому вы присоединяетесь,
+       и примите (или отклоните) запрос.
 
-
-  <p>Ваш уровень доступа: <span class="user_rlevel"></span>. Поменять ваш уровень
-     доступа может пользователь с уровнем, большим, чем у вас.
-  <br>Уровни доступа:
-  <ul>
-  <li>ограниченный -- те же права, что и у анонимного пользователя,
-  <li>обычный -- любой новый пользователь,
-  <li>модератор -- может править чужие записи и банить обычных пользователей,
-  <li>администратор -- может назначать и свергать модераторов,
-  <li>самый главный -- пользователь с самыми высокими правами.
-  </ul>
+    <span data-bind="if: joinreq">
+      <br>Неподтвержденные запросы на присоединение:
+      <table>
+      <tbody data-bind="foreach: joinreq">
+      <tr><td data-bind="html: html"></td>
+          <td><input type=submit value="принять"
+                     data-bind='click: function(data, event){ $parent.joinreq_accept($index)}'>
+              <input type=submit value="отклонить"
+                     data-bind='click: function(data, event){ $parent.joinreq_delete($index)}'>
+          </td>
+      </tr></tbody></table>
+      <br>Будте внимательны, принимайте те запросы, которые вы
+          отправляли, убедитесь, что это ваш аккаунт.
+    </span>
+    </font>
+    </form>
   </span>
 
-  <script>
-    // print level form
-    function level_form(user){
-      ret = '<span id="level_' + user.alias + '">'
-            + get_rlevel(user.level) + '</span>&nbsp;';
-      if (user.level_hints){ ret = ret
-           + '<img src="RESDIR/edit2.png"'
-           + ' alt="редактировать"'
-           + ' onclick="ch_level_form(\'' + user.alias + '\')"> '
-           + '<select style="display:none"'
-           + ' onchange="ch_level_do(\'' + user.alias + '\')"'
-           + ' id="level_form_' + user.alias + '">';
-        for (var i in user.level_hints){
-          var l = user.level_hints[i];
-          ret = ret + '<option value="' + l + '"'
-                    + (l==user.level? 'selected':'') + '>'
-                    + get_rlevel(l) + '</option>';
-        }
-        ret = ret + '</select>';
-      }
-      return ret;
-    }
-
-    // open/close the level form
-    // fill if with a current alias name
-    function ch_level_form(alias){
-      var form = document.getElementById('level_form_' + alias);
-      form.style.display = form.style.display=="inline"? "none":"inline";
-    }
-
-    // ch_level request + update all levels on the page
-    function ch_level_do(alias){
-      var form = document.getElementById('level_form_' + alias);
-      do_request('set_level "' + alias + '" ' + form.value, function(user){
-        a = document.getElementById('level_' + user.alias);
-        a.innerHTML = get_rlevel(user.level);
-      });
-      ch_level_form(alias);
-    }
-
-    function sh_users(){
-      var tab = document.getElementById('user_table');
-      var btn = document.getElementById('user_button');
-      if (tab.style.display=="none"){
-        do_request('user_list', function(users){
-          var tab = document.getElementById('user_table');
-          var btn = document.getElementById('user_button');
-          btn.value="скрыть";
-          tab.style.display="inline";
-          tab.innerHTML='<tr>'
-                       +'<th>пользователь</th>'
-                       +'<th>аккаунты</th>'
-                       +' <th>уровень</th>'
-                       +'</tr>';
-          for (var key in users){
-            tab.innerHTML = tab.innerHTML
-              + '<tr>'
-              + '<td valign=top><b>' + users[key].alias + '</b></td>'
-              + '<td valign=top>' + user_faces(users[key],'<br>') + '</td>'
-              + '<td valign=top>' + level_form(users[key]) + '</td>'
-              + '</tr>';
-          }
-        });
-      }
-      else {
-        tab.style.display="none";
-        btn.value="показать";
-        tab.innerHTML="";
-      }
-    }
-  </script>
-
-  <span class="list_block" style="display:none">
-  <h4>Список пользователей</h4>
-  <input type=submit name="sh_users" value="показать"
-         onclick="sh_users()" id="user_button">
-  <p><table style="display:none" id="user_table" cellpadding=5 cellspacing=0 border=1>
-  </table>
+  <!-- User level -->
+  <span data-bind="if: alias">
+    <p>Ваш уровень доступа: <b data-bind="text: rlevel"></b>.
+       Поменять ваш уровень доступа может пользователь с уровнем, большим, чем у вас.
+    <br>Уровни доступа:
+    <ul>
+    <li>ограниченный -- те же права, что и у анонимного пользователя,
+    <li>обычный -- любой новый пользователь,
+    <li>модератор -- может править чужие записи и банить обычных пользователей,
+    <li>администратор -- может назначать и свергать модераторов,
+    <li>самый главный -- пользователь с самыми высокими правами.
+    </ul>
   </span>
 
-  <script> do_init() </script>
+  <!-- User list -->
+  <span data-bind='if: level() >= 2'>
+    <h4>Список пользователей</h4>
+    <input type=submit data-bind='click: sw_user_list, value: user_list_btn'>
+
+    <p><table data-bind='visible: user_list' style="display: none"
+        id="user_table" cellpadding=5 cellspacing=0 border=1>
+    <thead><tr><th>пользователь</th><th>аккаунты</th><th>уровень</th></tr></thead>
+    <tbody data-bind='foreach: users'>
+      <tr>
+      <td valign=top><b data-bind='text: alias'></b></td>
+      <td valign=top data-bind="foreach: faces">
+        <span data-bind="html: html"></span><br>
+      </td>
+      <td valign=top>
+        <span data-bind="text: rlevel"></span>
+        <span data-bind='if: level_hints().length > 0'>
+        <img src="RESDIR/edit2.png" alt="изменить"
+           data-bind='click: sw_level_form'>
+        <form>
+        <select style="display: none"
+           data-bind="visible: level_form,
+                      options: level_hints,
+                      optionsText: 'rlevel',
+                      optionsValue: 'level',
+                      value: new_level,
+                      event: {change: $parent.set_level}">
+        </select>
+        </form>
+        </span>
+      </td>
+      </tr>
+    </tbody>
+    </table>
+  </span>
+
+
 </body>
 </html>

@@ -1,4 +1,4 @@
-//
+// Login URL
 var providers = 'livejournal,facebook,vkontakte,yandex,google';
 var evdb_url = 'http://MYHOST/EVDB_CGI';
 var lgnz_url = 'https://loginza.ru/api/widget?token_url=' + evdb_url
@@ -13,7 +13,10 @@ function do_request(action, callback){
       try {
         var data = JSON.parse(xhttp.responseText);
       }
-      catch(e){ alert(e + "\n" + xhttp.responseText); }
+      catch(e){
+        var data = {error_type: "xhttp",
+                    error_message: xhttp.responseText};
+      }
       if (data.error_type){ process_err(data); }
       else { callback(data);}
     }
@@ -29,117 +32,191 @@ function process_err(data){
 }
 
 
-// fill user data
-function update_user_info(my_info){
-  var lform = document.getElementById('login_box');
-  var name_block = 'inline';
-  var list_block = 'inline';
-  if (my_info.session && my_info.alias){
-    lform.innerHTML = '<a href="USERHTM"><span class="user_alias"></span></a> '
-       + '<input type="submit" value="выйти" '
-       + 'name="LogOut" onclick="do_logout()"/>';
-
-    a = document.getElementsByClassName('user_alias');
-    for (var i=0; i < a.length; i++){
-      a[i].innerHTML = my_info.alias; }
-
-    a = document.getElementsByClassName('user_rlevel');
-    for (var i=0; i < a.length; i++){
-      a[i].innerHTML = get_rlevel(my_info.level); }
-
-    a = document.getElementsByClassName('user_joinreqs');
-    for (var i=0; i < a.length; i++){
-      a[i].innerHTML = user_joinreqs(my_info, '<br>'); }
-
-    a = document.getElementsByClassName('user_identity');
-    for (var i=0; i < a.length; i++){
-      a[i].innerHTML = user_faces(my_info, '<br>'); }
-
-    if (my_info.level<1) {list_block='none';}
-  } else {
-    lform.innerHTML='<a href="' + lgnz_url + '">войти</a>';
-    name_block = 'none';
-    list_block = 'none';
-  }
-
-  a = document.getElementsByClassName('name_block');
-  for (var i=0; i < a.length; i++){ a[i].style.display=name_block; }
-
-  a = document.getElementsByClassName('list_block');
-  for (var i=0; i < a.length; i++){ a[i].style.display=list_block; }
-
+/////////////////////////////////////////////////////////////////
+// make the model for user face (external account information)
+// which is used in severel places.
+function make_face_model(data){
+  var mk_icon = function(d){
+      if (d.site == 'vk') return 'RESDIR/vk.png';
+      if (d.site == 'lj') return 'RESDIR/lj.gif';
+      if (d.site == 'fb') return 'RESDIR/fb.png';
+      if (d.site == 'yandex') return 'RESDIR/ya.png';
+      if (d.site == 'google') return 'RESDIR/go.png';
+      if (d.site == 'gplus')  return 'RESDIR/gp.png';
+      return "RESDIR/q.png";};
+  var mk_html = function(d){
+      return '<a style="text-decoration: none;" href="' + d.id + '">'
+           + '<img style="margin-bottom:-2px;" src="' + mk_icon(d) + '">'
+           + '&nbsp;<b>' + d.name + '</b></a>'};
+  return {
+    id:    ko.observable(data.id),
+    name:  ko.observable(data.name),
+    site:  ko.observable(data.site),
+    icon:  ko.pureComputed(function(){return mk_icon(data)}, this),
+    html:  ko.pureComputed(function(){return mk_html(data)}, this)
+  };
 }
 
-
-
-function do_init(){
-  document.cookie = "RETPAGE=" + document.URL;
-  var lform = document.getElementById('login_box');
-  lform.innerHTML='<a href="' + lgnz_url + '">войти</a>';
-  do_request('my_info', update_user_info);
-}
-
-function do_logout(){
-  do_request('logout', function(info){
-    document.cookie = "SESSION=";
-    window.location.replace("MAINHTM")
-  });
-}
-
-function get_ppic(pr){
-  var a = '<img style="margin-bottom:-2px;" src="';
-  var b = '">';
-  if (pr == 'vk') return a + 'RESDIR/vk.png' + b;
-  if (pr == 'lj') return a + 'RESDIR/lj.gif' + b;
-  if (pr == 'fb') return a + 'RESDIR/fb.png' + b;
-  if (pr == 'yandex') return a + 'RESDIR/ya.png' + b;
-  if (pr == 'google') return a + 'RESDIR/go.png' + b;
-  if (pr == 'gplus')  return a + 'RESDIR/gp.png' + b;
-  return "";
-}
-
-function get_rlevel(l){
+/////////////////////////////////////////////////////////////////
+// Russion level names
+var mk_rlevel = function(l) {
   if (l == -1) return 'ограниченный';
   if (l == 0) return 'обычный';
   if (l == 1) return 'модератор';
   if (l == 2) return 'администратор';
   if (l == 3) return 'самый главный';
-  return null;
+  return null;};
+
+/////////////////////////////////////////////////////////////////
+// simplified user model (for main and other pages)
+function simple_view_model(data) {
+  // Data, first create empty observables.
+  var self = this;
+  self.alias    = ko.observable();
+  self.level    = ko.observable();
+
+  // Function for filling observables from the data.
+  // It will be also needed for updating data after some actions.
+  var update_data = function(data){ // my user info
+    self.alias(data.alias);
+    self.level(data.level);
+  };
+  // Fill the data in the beginning
+  update_data(data);
+
+  // Make an observable with user level in Russian.
+  self.rlevel = ko.pureComputed(
+    function(){return mk_rlevel(self.level())}, this);
+
+  //////////////////////////////////////////////
+  // logout/logout
+  // is the user logged in
+  self.is_logged = ko.pureComputed(
+    function(){return self.alias()!=undefined}, this);
+  // loginza url
+  self.lgnz_url = lgnz_url;
+  // logout action
+  self.logout  = function(){ do_request('logout', update_data); }
 }
 
-// print user face
-function user_face(face){
-  return '<b><a class="nd" href="' + face.id + '">'
-       + get_ppic(face.site) + '&nbsp;'
-       + face.name + '</a></b>';
-}
+/////////////////////////////////////////////////////////////////
+// full user model (for user page)
+function full_view_model(data) {
+  // Data, first create empty observables.
+  var self = this;
+  self.alias    = ko.observable();
+  self.level    = ko.observable();
+  self.faces    = ko.observableArray();
+  self.joinreq  = ko.observableArray();
+  self.users    = ko.observableArray(); // user list
 
-// print user faces
-function user_faces(user, sep){
-  var ret="";
-  for (var i=0; i<user.faces.length; i++){
-    ret += (i==0?"":sep) + user_face(user.faces[i]);
+  // Function for filling observables from the data.
+  // It will be also needed for updating data after some actions.
+  var update_data = function(data){ // my user info
+    self.alias(data.alias);
+    self.level(data.level);
+    self.faces(ko.utils.arrayMap(data.faces, make_face_model));
+    self.joinreq(ko.utils.arrayMap(data.joinreq, make_face_model));
+  };
+  // Fill the data in the beginning
+  update_data(data);
+
+  // Make an observable with user level in Russian.
+  self.rlevel = ko.pureComputed(
+    function(){return mk_rlevel(self.level())}, this);
+
+  //////////////////////////////////////////////
+  // logout/logout
+  // is the user logged in
+  self.is_logged = ko.pureComputed(
+    function(){return self.alias()!=undefined}, this);
+  // loginza url
+  self.lgnz_url = lgnz_url;
+  // logout action
+  self.logout  = function(){ do_request('logout', update_data); }
+
+  //////////////////////////////////////////////
+  // Change alias.
+  self.alias_form = ko.observable(false); // alias form switcher
+  self.sw_alias_form = function(){self.alias_form(!self.alias_form());};
+  self.new_alias  = ko.observable(self.alias());
+  self.set_alias  = function(){
+     if (self.new_alias() == self.alias()) return;
+     do_request('set_alias ' + self.new_alias(), function(data){
+       self.alias(data.alias); })};
+
+  //////////////////////////////////////////////
+  // Join form
+  self.join_form = ko.observable(false); // join form switcher
+  self.sw_join_form = function(){self.join_form(!self.join_form());};
+  self.joinreq_done = ko.observable(false);
+  self.joinreq_name = ko.observable();
+  self.joinreq_add = function(){
+     if (self.joinreq_name() == self.alias()) return;
+     do_request('joinreq_add ' + self.joinreq_name(), function(data){
+       self.joinreq_done(true); })};
+  self.joinreq_accept = function(i){
+    do_request('joinreq_accept ' + i(), update_data);}
+  self.joinreq_delete = function(i){
+    do_request('joinreq_delete ' + i(), update_data);};
+
+  //////////////////////////////////////////////
+  // User list
+  var user_list_vars = ['показать', 'скрыть'];
+  self.user_list = ko.observable(false); // join form switcher
+  self.user_list_btn = ko.observable(user_list_vars[0]);
+  // Show/hide user list. The request runs here.
+  self.sw_user_list = function(){
+    self.user_list(!self.user_list());
+    self.user_list_btn(user_list_vars[self.user_list()?1:0]);
+    if (self.user_list()){
+      do_request('user_list', update_users);
+    }
+  };
+  // build user_list model as an observableArray
+  var update_users = function(data){
+    self.users(ko.utils.arrayMap(data,
+      function(d){ return new user_list_entry(d);}));
   }
-  return ret;
-}
-
-// print user join requests
-function user_joinreqs(user, sep){
-  var ret="";
-  if (user.joinreq == undefined) return "";
-  for (var i=0; i<user.joinreq.length; i++){
-    ret += (i==0?"":sep) + user_face(user.joinreq[i]);
-    ret += ' <input type=submit value="принять" onclick="joinreq_accept('+ i +')">';
-    ret += ' <input type=submit value="отклонить" onclick="joinreq_delete('+ i +')">';
+  // build user model from a user_list entry
+  var user_list_entry = function(data){
+    var self = this;
+    self.alias  = ko.observable(data.alias);
+    self.level  = ko.observable(data.level);
+    self.faces  = ko.observableArray(
+        ko.utils.arrayMap(data.faces, make_face_model));
+    self.rlevel = ko.pureComputed(
+        function(){return mk_rlevel(self.level())}, this);
+    // level form switcher
+    self.level_form = ko.observable(false);
+    self.sw_level_form = function(){self.level_form(!self.level_form());};
+    // level hints
+    self.level_hints = ko.observableArray(ko.utils.arrayMap(
+         data.level_hints, function(l){
+           return {level:l, rlevel:mk_rlevel(l)};}));
+    self.new_level = ko.observable(data.level);
+  };
+  // set level of the user
+  self.set_level = function(user){
+    do_request('set_level "' + user.alias() + '" ' + user.new_level(),
+      function(u){ user.level(u.level); user.level_form(false);});
   }
-  return ret;
 }
 
-function joinreq_accept(i){
-  do_request('joinreq_accept ' + i, do_init);
+
+
+// This function is run once after loading user.htm
+function user_on_load(){
+  document.cookie = "RETPAGE=" + document.URL;
+  do_request('my_info', function(data){
+    ko.applyBindings(new full_view_model(data));
+  });
 }
 
-function joinreq_delete(i){
-  do_request('joinreq_delete ' + i, do_init);
+// This function is run once after loading user.htm
+function main_on_load(){
+  document.cookie = "RETPAGE=" + document.URL;
+  do_request('my_info', function(data){
+    ko.applyBindings(new simple_view_model(data));
+  });
 }
-

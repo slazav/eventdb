@@ -1,5 +1,5 @@
-All files in this folder (*.js, *.htm, *.pl)
-are proccesed by m4 with macro:
+In files in this folder (*.js, *.htm, *.pl)
+following variables are substituted:
 
 RESDIR  -- folder for js, css images on the server
 MAINHTM -- main.htm page
