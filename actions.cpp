@@ -92,10 +92,11 @@ check_alias(const char *alias){
 
 /********************************************************************/
 // user database
-//  int id -> {faces: [ {id, name, site} ] // login information
-//             name, alias, level,        // local information
-//             session, stime}            // session information
-//  secondary: sessions aliases faces
+//  int id -> {faces:   [ {id, name, site} ] // login information
+//             joinreq: [ {id, name, site} ] // join requests
+//             alias, level,         // local information
+//             session, stime, sid}  // session information
+//  secondary: session alias faces
 /********************************************************************/
 
 class UserDB : public JsonDB{
@@ -147,14 +148,12 @@ do_login(const CFG & cfg, int argc, char **argv){
     for (int i=0; i<user["faces"].size(); i++){
       if (user["faces"][i]["id"].as_string() != face_id) continue;
       user["faces"].set(i, face);
-      user.set("sface", i);
     }
   }
   else{ /* new user */
     user.set("id", -1); // negative id if we want to add new one
     user.set("faces", Json::array());
     user["faces"].append(face);
-    user.set("sface", 0);
 
     // auto level: for the very first user level="admin"
     user.set("level", udb.is_empty()? LEVEL_SUPER:LEVEL_NORM);
@@ -181,6 +180,7 @@ do_login(const CFG & cfg, int argc, char **argv){
     user.set("alias", alias);
   }
   /* Create new session */
+  user.set("sid", face_id);
   user.set("stime",   (json_int_t)time(NULL));
   user.set("session", make_session());
 
@@ -327,7 +327,7 @@ do_user_list(const CFG & cfg, int argc, char **argv){
     // remove session information
     if (ret[i].exists("session")) ret[i].del("session");
     if (ret[i].exists("stime"))   ret[i].del("stime");
-    if (ret[i].exists("sface"))   ret[i].del("sface");
+    if (ret[i].exists("sid"))     ret[i].del("sid");
 
     // add level_hints: how can I change the level
     int ln = ret[i]["level"].as_integer();

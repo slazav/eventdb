@@ -10,6 +10,7 @@ SRVDEST=SRV$TEST
 SEDCMD="s|RESDIR|edb$TEST|g
         s|MAINHTM|main$TEST.htm|g
         s|MAPHTM|map$TEST.htm|g
+        s|HELPHTM|help$TEST.htm|g
         s|USERHTM|user$TEST.htm|g
         s|MYHOST|slazav.mccme.ru|g
         s|EVDB_CGI|perl/edb$TEST.pl|g
