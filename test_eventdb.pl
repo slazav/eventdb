@@ -15,7 +15,7 @@ sub run_test{
   my $out;
   $res =~ s/\"stime\": (\d+)/\"stime\": 1234567890/;
   $out->{stime}=$1;
-  $res =~ s/\"session\": \"([^\"]+)\"/\"session\": \"-\"/;
+  $res =~ s/\"session\": \"([^\"]+)\"/\"session\": \"ssss\"/;
   $out->{session}=$1;
   $res =~ /\"id\": \"([^\"]+)\"/;
   $out->{id}=$1;
@@ -49,13 +49,23 @@ run_test('my_info', "x", $r_an);
 # login with bad token (connection to loginza needed)
 #run_test('login', 'xx', '{"error_type":"token_validation","error_message":"Invalid token value."}');
 
+# test faces
+my $LJF = '{"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}';
+my $FBF = '{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}';
+my $VKF = '{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}';
+# test sid's
+my $LJS = $LJF; $LJS =~ s/.*\"id\": (\"[^\"]*\").*/\"sid\": $1/;
+my $FBS = $FBF; $FBS =~ s/.*\"id\": (\"[^\"]*\").*/\"sid\": $1/;
+my $VKS = $VKF; $VKS =~ s/.*\"id\": (\"[^\"]*\").*/\"sid\": $1/;
+my $ST = '"stime": 1234567890, "session": "ssss"'; # these non-reproducable values are converted by run_test()
+
+my $r1 = '{"id": 1, "faces": ['.$LJF.'], "level": 3, "alias": "test", '.$LJS.', '.$ST.'}';
+my $r2 = '{"id": 2, "faces": ['.$FBF.'], "level": 0, "alias": "TestUser", '.$FBS.', '.$ST.'}';
+# note the auto alias user01
+my $r3 = '{"id": 3, "faces": ['.$VKF.'], "level": 0, "alias": "user01", '.$VKS.', '.$ST.'}';
+
 # login test users (vk, fb, lj)
 # first user gets admin rights
-my $r1 = '{"id": 1, "faces": [{"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "test", "sid": "http://test.livejournal.com/", "stime": 1234567890, "session": "-"}';
-my $r2 = '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}], "level": 0, "alias": "TestUser", "sid": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "stime": 1234567890, "session": "-"}';
-# note the auto alias user01
-my $r3 = '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 0, "alias": "user01", "sid": "http://vk.com/id000000000", "stime": 1234567890, "session": "-"}';
-
 my $o1 = run_test('login', '382512edfa7149b79b910cf6227e3e16', $r1);
 my $o2 = run_test('login', '7202c11c442dbd1e7c7f9c33e2ee61d9', $r2);
 my $o3 = run_test('login', '6222d12c54a233deae789c3ce22eb1d9', $r3);
@@ -104,7 +114,9 @@ run_test('my_info', $o1->{session}, $r_an);
 
 # user list
 $o1 = run_test('login', '382512edfa7149b79b910cf6227e3e16', $r1);
-run_test('user_list', $o1->{session}, '[{"id": 1, "faces": [{"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "sla"}, {"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}], "level": 0, "alias": "TestUser", "level_hints": [-1, 0, 1, 2]}, {"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 0, "alias": "user01", "level_hints": [-1, 0, 1, 2]}]');
+run_test('user_list', $o1->{session}, '[{"id": 1, "faces": ['.$LJF.'], "level": 3, "alias": "sla"},'.
+                                      ' {"id": 2, "faces": ['.$FBF.'], "level": 0, "alias": "TestUser", "level_hints": [-1, 0, 1, 2]},'.
+                                      ' {"id": 3, "faces": ['.$VKF.'], "level": 0, "alias": "user01", "level_hints": [-1, 0, 1, 2]}]');
 run_test('user_list', '', '{"error_type":"user_list","error_message":"authentication error"}');
 
 #*********************
@@ -117,29 +129,29 @@ $o3 = run_test('login', '6222d12c54a233deae789c3ce22eb1d9', $r3);
 
 # add - delete
 run_test('joinreq_add user01', $o1->{session}, '{}');
-run_test('my_info', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 0, "alias": "user01", "sid": "http://vk.com/id000000000", "stime": 1234567890, "session": "-", "joinreq": [{"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}]}');
+run_test('my_info', $o3->{session}, '{"id": 3, "faces": ['.$VKF.'], "level": 0, "alias": "user01", '.$VKS.', '.$ST.', "joinreq": ['.$LJF.']}');
 run_test('my_info', $o1->{session}, $r1);
 
 run_test('joinreq_add user01', $o1->{session}, '{}');
-run_test('joinreq_delete 0', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 0, "alias": "user01", "sid": "http://vk.com/id000000000", "stime": 1234567890, "session": "-"}');
+run_test('joinreq_delete 0', $o3->{session}, '{"id": 3, "faces": ['.$VKF.'], "level": 0, "alias": "user01", '.$VKS.', '.$ST.'}');
 run_test('my_info', $o1->{session}, $r1);
 run_test('my_info', $o3->{session}, $r3);
 
 # 1->3
 run_test('joinreq_add user01', $o1->{session}, '{}');
-run_test('joinreq_accept 0', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "user01", "sid": "http://vk.com/id000000000", "stime": 1234567890, "session": "-"}');
-run_test('my_info', $o3->{session}, '{"id": 3, "faces": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "user01", "sid": "http://vk.com/id000000000", "stime": 1234567890, "session": "-"}');
+run_test('joinreq_accept 0', $o3->{session}, '{"id": 3, "faces": ['.$VKF.', '.$LJF.'], "level": 3, "alias": "user01", '.$VKS.', '.$ST.'}');
+run_test('my_info', $o3->{session}, '{"id": 3, "faces": ['.$VKF.', '.$LJF.'], "level": 3, "alias": "user01", '.$VKS.', '.$ST.'}');
 
 # user o1 does not exists any more
 run_test('my_info', $o1->{session}, $r_an);
 
 # 3->2
 run_test('joinreq_add TestUser', $o3->{session}, '{}');
-run_test('my_info', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}], "level": 0, "alias": "TestUser", "sid": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "stime": 1234567890, "session": "-", "joinreq": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}]}');
+run_test('my_info', $o2->{session}, '{"id": 2, "faces": ['.$FBF.'], "level": 0, "alias": "TestUser", '.$FBS.', '.$ST.', "joinreq": ['.$VKF.', '.$LJF.']}');
 
 #accept both
-run_test('joinreq_accept 1', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}], "level": 3, "alias": "TestUser", "sid": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "stime": 1234567890, "session": "-", "joinreq": [{"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}]}');
-run_test('joinreq_accept 0', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}, {"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 3, "alias": "TestUser", "sid": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "stime": 1234567890, "session": "-"}');
+run_test('joinreq_accept 1', $o2->{session}, '{"id": 2, "faces": ['.$FBF.', '.$LJF.'], "level": 3, "alias": "TestUser", '.$FBS.', '.$ST.', "joinreq": ['.$VKF.']}');
+run_test('joinreq_accept 0', $o2->{session}, '{"id": 2, "faces": ['.$FBF.', '.$LJF.', '.$VKF.'], "level": 3, "alias": "TestUser", '.$FBS.', '.$ST.'}');
 
-run_test('my_info', $o2->{session}, '{"id": 2, "faces": [{"id": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "site": "fb", "name": "Test User"}, {"id": "http://test.livejournal.com/", "site": "lj", "name": "test"}, {"id": "http://vk.com/id000000000", "site": "vk", "name": "Test User"}], "level": 3, "alias": "TestUser", "sid": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "stime": 1234567890, "session": "-"}');
+run_test('my_info', $o2->{session}, '{"id": 2, "faces": ['.$FBF.', '.$LJF.', '.$VKF.'], "level": 3, "alias": "TestUser", '.$FBS.', '.$ST.'}');
 
