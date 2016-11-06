@@ -441,90 +441,34 @@ local_dump_db(const CFG & cfg, int argc, char **argv){
 
 }
 
-
 /********************************************************************/
-// event database
-//  id -> {id, name, text, date1, date2,
-//         [people], [links], [tags]
-//         cuser, muser, ctime, mtime} // db information
-//  secondary: date1, date2
-//  people: array of strings ?
-//  tags:   array of strings ?
-//  links:  array of objects {ref, text, type, auth, tags}
-/********************************************************************/
-
-class EventDB : public JsonDB{
+class DataDB : public JsonDB{
   public:
-  EventDB(const CFG & cfg, const int flags=0):
-       JsonDB(cfg.datadir + "/event", true, flags){
-    secondary_open("date1",  true);
-    secondary_open("date2",  true);
-    secondary_open("tags",   true);
-    secondary_open("people", true);
+  DataDB(const CFG & cfg, const std::string name, const int flags=0):
+       JsonDB(cfg.datadir + "/" + name, true, flags){
+    secondary_open("date_key",  true);
+    secondary_open("coord_key", true);
+    secondary_open("keys",  true);
+    secondary_open("type",  true);
+    secondary_open("ctime", true);
+    secondary_open("cuser", true);
+    secondary_open("mtime", true);
+    secondary_open("muser", true);
   }
 };
 
-// check date string YYYY-MM-DD
-bool check_date(const char * d){
-  if (strlen(d) != 10) return false;
-  for (int i=0; i<strlen(d); i++){
-    if ((i==5 || i==8) && d[i]!='-') return false;
-    if (i!=5 && i!=8 && (d[i]<'0' || d[i]>'9')) return false;
-  }
-  return true;
-}
-
-/********************************************************************/
-// Event-related actions
-/********************************************************************/
 void
-do_ev_new(const CFG & cfg, int argc, char **argv){
-  Err("ev_new");
-  check_args(argc, 1);
-  Json ev = Json::load_file(argv[1]);
-  if (!ev) throw Err() << "bad json input";
-
-  /* Get user information. Empty session is an error */
-  UserDB udb(cfg, DB_RDONLY);
-  Json user = udb.get_by_session(get_secret());
-  clr_secret();
-  if (!user) throw Err() << "authentication error";
-
-  // check user level
-  int level = user["level"].as_integer();
-  if (level<LEVEL_NORM) throw Err() << "user level is too low";
-
-  // check dates
-  std::string d1 = ev["date1"].as_string();
-  std::string d2 = ev["date2"].as_string();
-  if (d2 == "") d2=d1;
-  if (!check_date(d1.c_str())) throw Err() << "date1 is not in YYYY-MM-DD format";
-  if (!check_date(d2.c_str())) throw Err() << "date2 is not in YYYY-MM-DD format";
-
-  // check title
-
-
+do_write(const CFG & cfg, int argc, char **argv){
 }
 
-
-/********************************************************************/
 void
-do_ev_del(const CFG & cfg, int argc, char **argv){
+do_del(const CFG & cfg, int argc, char **argv){
 }
 
-/********************************************************************/
 void
-do_ev_edit(const CFG & cfg, int argc, char **argv){
+do_read(const CFG & cfg, int argc, char **argv){
 }
 
-/********************************************************************/
 void
-do_ev_show(const CFG & cfg, int argc, char **argv){
+do_search(const CFG & cfg, int argc, char **argv){
 }
-
-/********************************************************************/
-void
-do_ev_list(const CFG & cfg, int argc, char **argv){
-}
-
-/********************************************************************/

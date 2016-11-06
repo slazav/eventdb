@@ -50,6 +50,12 @@ main(int argc, char **argv){
     else if (action == "joinreq_add") do_joinreq_add(cfg, argc-1, argv+1);
     else if (action == "joinreq_delete") do_joinreq_delete(cfg, argc-1, argv+1);
     else if (action == "joinreq_accept") do_joinreq_accept(cfg, argc-1, argv+1);
+
+    else if (action == "write")  do_write(cfg, argc-1, argv+1);
+    else if (action == "read")   do_read(cfg, argc-1, argv+1);
+    else if (action == "del")    do_del(cfg, argc-1, argv+1);
+    else if (action == "search") do_search(cfg, argc-1, argv+1);
+
     else throw Err("eventdb") << "Unknown action: " << action;
     throw Exc() << "{}";
   }

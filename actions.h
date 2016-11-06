@@ -20,11 +20,10 @@ action_func do_login,
             do_joinreq_delete,
             do_joinreq_accept;
 
-action_func do_ev_new,
-            do_ev_del,
-            do_ev_edit,
-            do_ev_show,
-            do_ev_list;
+action_func do_write,
+            do_read,
+            do_del,
+            do_search;
 
 action_func local_dump_db;
 
