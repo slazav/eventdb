@@ -55,6 +55,9 @@ int main() {
 
     ASSERT_TRUE(e1.is_string(),  "e1 is not string");
     ASSERT_FALSE(e1.is_number(), "e1 is number");
+    ASSERT_FALSE(e7.is_number(), "e7 is number");
+    ASSERT_FALSE(e8.is_number(), "e8 is number");
+    ASSERT_FALSE(e9.is_number(), "e9 is number");
     ASSERT_FALSE(e1.is_null(),   "e1 is null");
     ASSERT_TRUE(e1,              "e1 is not defined");
 
