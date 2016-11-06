@@ -26,6 +26,21 @@
        "gender":"","nickname":"","dob":"1900-01-01",
        "address":{"home":{"country":0}},
        "photo":"http:\/\/cs000000.vk.me\/v000000000\/00000\/00000000000.jpg"
+    },
+    "32a0b423423d092b223551c379427799":{
+       "gender":"M",
+       "uid":"000000000000000000000",
+       "name":{"full_name":"Test User","last_name":"Test","first_name":"User"},
+       "photo":"https:\/\/lh3.googleusercontent.com\/-XXXXXXXXXXX\/AAAAAAAAAAI\/AAAAAAAAAAA\/XXXXXXXXXXX\/photo.jpg?sz=50",
+       "is_plus_user":true,
+       "language":"ru",
+       "circled_by_count":61,
+       "verified":false,
+       "openid_id":"https:\/\/www.google.com\/accounts\/o8\/id?id=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+       "email":"slazav@narod.ru",
+       "email_verified":true,
+       "provider":"https:\/\/www.google.com\/accounts\/o8\/ud",
+       "identity":"https:\/\/www.google.com\/accounts\/o8\/id?id=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     }
   }
 }
