@@ -1,9 +1,4 @@
-*.o
-eventdb
-dump_db
+SRV
+SRV_test
+WWW
 sync
-
-jansson
-db
-data
-file

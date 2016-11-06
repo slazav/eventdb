@@ -1,0 +1,110 @@
+/* BercleyDB with json support
+
+  libraries:
+    bercleydb: http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html
+               https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/reftoc.html
+    jansson:   https://github.com/akheron/jansson
+               http://jansson.readthedocs.org/en/latest/
+
+   Keys are unique integers or strings, values are json strings.
+   Secondary indices are supported to look through fields in json objects.
+
+*/
+/********************************************************************/
+
+/* I do not know, how to keep this in the class... */
+/* I keep a key name for any secondary database in the
+   global map to use the global extractor function. */
+std::map<DB*, std::string> jsondb_sec_keys;
+
+/* Universal key extractor: extracts string or array of strings from json object */
+int jsonbd_key_extractor(DB *secdb, const DBT *pkey, const DBT *pdata, DBT *skey);
+
+/********************************************************************/
+
+// Type for integer keys. We need > 64bit for ms time in logs
+typedef unsigned long long int ikey_t;
+
+/********************************************************************/
+// create DBT objects
+DBT mk_dbt();
+DBT mk_dbt(const ikey_t * i);
+DBT mk_dbt(const char * str);
+DBT mk_dbt(const std::string & str);
+
+/********************************************************************/
+
+/* The main JsonDB class */
+class JsonDB{
+
+  /************************************/
+  // Error class for exceptions
+  public:
+  class Err {
+    std::ostringstream s;
+    public:
+      Err(){}
+      Err(const Err & o) { s << o.s.str(); }
+      template <typename T>
+      Err & operator<<(const T & o){ s << o; return *this; }
+      std::string json() const {
+        return std::string("{\"error_type\": \"jsondb\", ") +
+                            "\"error_message\":\"" + s.str() + "\"}"; }
+      std::string str() const { return s.str(); }
+  };
+
+  /************************************/
+  /* Main constructor
+       file    -- database filename
+       flags   -- DB_CREATE | DB_EXCL | DB_RDONLY | DB_TRUNCATE ...
+       intkeys -- db use integer/string keys
+   */
+  JsonDB(const std::string & fname_, const bool intkeys_ = true, const int flags_=0):
+
+  /* Open a secondary database, associated with some key
+     in json objects of the primary database. */
+  void open_sec(const std::string & key, const bool dup = false);
+
+  // check if the database is empty
+  bool is_empty(){
+
+  // put_str functions (integer or string key)
+  void put_str(const ikey_t ikey, const std::string & sval, const bool overwrite = true);
+  void put_str(const std::string & skey, const std::string & sval, const bool overwrite = true);
+
+  // exists functions (integer or string key)
+  bool exists(const ikey_t ikey);
+  bool exists(const std::string & skey);
+
+  // get_str functions (integer or string key)
+  std::string get_str(const ikey_t ikey);
+  std::string get_str(const std::string & skey);
+
+  // put_json functions (integer or string key)
+  void put_json(const ikey_t ikey, const Json & jj, const bool overwrite = true);
+  void put_json(const std::string & skey, const Json & jj, const bool overwrite = true);
+
+  // get_json functions (integer or string key)
+  Json get_json(const std::string & skey);
+  Json get_json(const ikey_t ikey);
+
+  // for integer IDs we can get the last one and write the next one
+  ikey_t get_last_id();
+  void put_str_next(const std::string & sval, const bool overwrite = true);
+  void put_json_next(const Json & jj, const bool overwrite = true);
+
+  // for integer IDs we can use time as a key (for log entries)
+  ikey_t put_str_time(const std::string & sval)
+  ikey_t put_json_time(const Json & jj)
+
+  // get all the database entries as a json object
+  Json get_all();
+
+  // get entries with the specified key-value pair as a json object
+  Json get_sec(const std::string & key, const std::string & val);
+
+};
+
+/******************************************************************************/
+
+#endif

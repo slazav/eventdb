@@ -1,0 +1,8 @@
+*.o
+eventdb
+dump_db
+sync
+
+data
+files
+logs

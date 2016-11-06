@@ -36,12 +36,13 @@ done
 
 cp www/edb/* $WWWDEST/edb$TEST/
 
-gmake clean
-gmake --eval "CFG_FILE=$(pwd)/$SRVDEST/config.json" &&
-   cp eventdb $SRVDEST/ &&
+gmake -C server clean
+gmake -C server --eval "CFG_FILE=$(pwd)/$SRVDEST/config.json" &&
+   cp server/eventdb $SRVDEST/ &&
    chmod 4755 $SRVDEST/eventdb ||:
 
-sed  's|"./|"'$(pwd)'/'$SRVDEST'/|' config.json > $SRVDEST/config.json
+#sed  's|"./|"'$(pwd)'/'$SRVDEST'/|' config.json > $SRVDEST/config.json
+touch $SRVDEST/config.json
 chmod 600 $SRVDEST/config.json
 
 mkdir -p $SRVDEST/data

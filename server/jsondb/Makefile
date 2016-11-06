@@ -1,9 +1,6 @@
-#JANSSON_CFLAGS := $(shell pkg-config --cflags jansson)
-#JANSSON_LIBS := $(shell pkg-config --libs jansson)
-
-LDLIBS=../jansson/src/.libs/libjansson.a -ldb
-CFLAGS=-I../jansson/src 
-#-std=c++11
+CFLAGS = $(shell pkg-config --cflags jansson)
+LDLIBS = $(shell pkg-config --libs jansson)
+LDLIBS += -ldb
 
 all: test1
 
