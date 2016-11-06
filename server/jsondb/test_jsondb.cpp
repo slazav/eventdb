@@ -92,7 +92,7 @@ main() {
       db.put(j5);
 
       try{
-        Json j = Json::load_string("{\"names\": \"1\", \"unames\": 2, \"id\":-1}");
+        Json j = Json::load_string("{\"names\": \"1\", \"unames\": {\"a\":0}, \"id\":-1}");
         db.put(j);
         ASSERT_TRUE(false, "string or array expected for unames");
       } catch(JsonDB::Err e){};
@@ -248,7 +248,7 @@ main() {
       } catch(JsonDB::Err e){};
 
       try{
-        Json j = Json::load_string("{\"names\": \"1\", \"unames\": 2, \"id\":\"z1\"}");
+        Json j = Json::load_string("{\"names\": \"1\", \"unames\": {}, \"id\":\"z1\"}");
         db.put(j);
         ASSERT_TRUE(false, "string or array expected for unames");
       } catch(JsonDB::Err e){};

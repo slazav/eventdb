@@ -438,7 +438,7 @@ jsonbd_key_extractor(DB *secdb, const DBT *pkey,
   std::set<std::string> v;
 
   // string:
-  if (jv.is_string()){
+  if (jv.is_string() || jv.is_number()){
     v.insert(jv.as_string());
   }
   // object with "id" field:
@@ -450,7 +450,7 @@ jsonbd_key_extractor(DB *secdb, const DBT *pkey,
   else if (jv.is_array()){
     for (unsigned int i=0; i<jv.size(); i++){
       // string in the array element
-      if (jv[i].is_string())
+      if (jv[i].is_string() || jv.is_number())
         v.insert(jv[i].as_string());
       // object with "id" field in the array element
       else if (jv[i].is_object() && jv[i].exists("id")
@@ -458,7 +458,7 @@ jsonbd_key_extractor(DB *secdb, const DBT *pkey,
         v.insert(jv[i].get("id").as_string());
     }
   }
-  else throw JsonDB::Err() << "strings or objects with id field expected: " << key_name;
+  else throw JsonDB::Err() << "strings, numbers, arrays or objects with id field expected: " << key_name;
 
   // build the DBT output
   int n = v.size();
