@@ -443,19 +443,19 @@ local_dump_db(const CFG & cfg, int argc, char **argv){
 
 /********************************************************************/
 class DataDB : public JsonDB{
-  JsonDB arc;
   public:
+  JsonDB arc;
   DataDB(const CFG & cfg, const std::string name, const int flags=0):
        JsonDB(cfg.datadir + "/" + name, true, flags),
        arc(cfg.datadir + "/" + name + ".arc", true, flags){
-//    secondary_open("date_key",  true);
-//    secondary_open("coord_key", true);
-//    secondary_open("keys",  true);
-//    secondary_open("type",  true);
-//    secondary_open("ctime", true);
-//    secondary_open("cuser", true);
-//    secondary_open("mtime", true);
-//    secondary_open("muser", true);
+    secondary_open("date_key",  true);
+    secondary_open("coord_key", true);
+    secondary_open("keys",  true);
+    secondary_open("ctime", true);
+    secondary_open("cuser", true);
+    secondary_open("mtime", true);
+    secondary_open("muser", true);
+    secondary_open("del",   true);
   }
 };
 
@@ -477,10 +477,48 @@ do_write(const CFG & cfg, int argc, char **argv){
   /* read JSON object from stdin */
   Json data = Json::load_stream(stdin);
 
-  /* LEVEL_ADMIN can create databases */
-  size_t dbflags = (user["level"].as_integer() >= LEVEL_ADMIN)? DB_CREATE:0;
+  /* get id from object or set it to -1 */
+  json_int_t id =-1;
+  if (data.exists("id")) id = data["id"].as_integer();
+  else data.set("id", id);
 
+  /* del field should be 1 if exists */
+  if (data.exists("del")){
+    if (data["del"].as_integer()!=0) data.set("del", 1);
+    else data.del("del");
+  }
+
+  /* Open database; LEVEL_ADMIN can create a new one */
+  json_int_t level = user["level"].as_integer();
+  size_t dbflags = (level>= LEVEL_ADMIN)? DB_CREATE:0;
   DataDB db(cfg, dbname, dbflags); // open database
+
+  /* Set mtime and muser fields */
+  data.set("mtime", (json_int_t)time(NULL));
+  data.set("muser", user["sid"]);
+
+  /* Set ctime, cuser, prev fields, store old version in archive if needed */
+  if (id==-1){ // new object
+    data.set("ctime", (json_int_t)time(NULL));
+    data.set("cuser", user["sid"]);
+    data.set("prev", -1);
+  }
+  else { // replace object
+    /* check is the old version exists*/
+    if (!db.exists(id)) throw Err() << "bad id";
+    Json old = db.get(id); // old object
+    /* check permissions */
+    if (old["cuser"].as_string() != user["sid"].as_string() && level < LEVEL_MODER)
+      throw Err() << "not enough permissions to edit";
+    data.set("ctime", old["ctime"]);
+    data.set("cuser", old["cuser"]);
+    old.set("id", -1);
+    db.arc.put(old);
+    data.set("prev", old["id"]);
+  }
+
+  /* build date_key and coord_key */
+
   db.put(data); // put data
 
   throw Exc() << data.save_string(JSON_OUT_FLAGS);
@@ -500,16 +538,16 @@ do_read(const CFG & cfg, int argc, char **argv){
 }
 
 void
-do_del(const CFG & cfg, int argc, char **argv){
-  Err("del"); // set error domain
+do_read_arc(const CFG & cfg, int argc, char **argv){
+  Err("read_arc"); // set error domain
   check_args(argc, 2);        // check argument number
   char * dbname = argv[1];    // database name
   json_int_t id  = atoi(argv[2]); // object id (0 for new)
 
   /* check length and symbols in the database name */
   check_name(dbname);
-//  DataDB db(cfg, dbname, DB_RDONLY);
-//  throw Exc() << db.get(id).save_string(JSON_OUT_FLAGS);
+  DataDB db(cfg, dbname, DB_RDONLY);
+  throw Exc() << db.arc.get(id).save_string(JSON_OUT_FLAGS);
 }
 
 void

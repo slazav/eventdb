@@ -14,6 +14,8 @@ sub run_test{
   my $res  = `printf "%s" '$sec' | ./eventdb $args`;
   my $out;
   $res =~ s/\"stime\": (\d+)/\"stime\": 1234567890/;
+  $res =~ s/\"ctime\": (\d+)/\"ctime\": 1234567890/;
+  $res =~ s/\"mtime\": (\d+)/\"mtime\": 1234567890/;
   $out->{stime}=$1;
   $res =~ s/\"session\": \"([^\"]+)\"/\"session\": \"ssss\"/;
   $out->{session}=$1;
@@ -173,14 +175,27 @@ $o3 = run_test('login', '6222d12c54a233deae789c3ce22eb1d9', $r3);
 # wrong number of arguments:
 run_test('write',  $o2->{session}, '{"error_type":"write","error_message":"wrong number of arguments, should be 1"}' );
 run_test('read',   $o2->{session}, '{"error_type":"read","error_message":"wrong number of arguments, should be 2"}' );
-run_test('del',    $o2->{session}, '{"error_type":"del","error_message":"wrong number of arguments, should be 2"}' );
+run_test('read_arc',   $o2->{session}, '{"error_type":"read_arc","error_message":"wrong number of arguments, should be 2"}' );
 run_test('search', $o2->{session}, '{"error_type":"search","error_message":"wrong number of arguments, should be 1"}' );
 
 # o2 can't create databases
 run_test('write db0', $o2->{session}."\n{}", '{"error_type": "jsondb", "error_message":"db0.db: No such file or directory"}' );
-# id field should exist
-run_test('write db0', $o1->{session}."\n{}", '{"error_type": "jsondb", "error_message":"db0.db: no id field in the json"}');
 
-run_test('write db0', "$o1->{session}\n".'{"id":-1, "data":[0,2]}', '{"id": 1, "data": [0, 2]}' );
-run_test('read db0 1',  $o1->{session}, '{"id": 1, "data": [0, 2]}' );
+run_test('write db0', "$o1->{session}\n".'{"data":[0,2]}', '{"data": [0, 2], "id": 1, "mtime": 1234567890, "muser": "http://test.livejournal.com/", "ctime": 1234567890, "cuser": "http://test.livejournal.com/", "prev": -1}' );
+run_test('write db0', "$o2->{session}\n".'{"data":[2,3],"id":-1}', '{"data": [2, 3], "id": 2, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": -1}' );
+run_test('write db0', "$o1->{session}\n".'{"id":5}',   '{"error_type":"write","error_message":"bad id"}' );
+run_test('write db0', "$o1->{session}\n".'{"id":"a"}', '{"error_type": "jsonxx", "error_message":"can\'t cast to integer"}');
+run_test('read db0 2',  $o1->{session}, '{"data": [2, 3], "id": 2, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": -1}' );
+run_test('read db0 4',  $o1->{session}, '{"error_type": "jsondb", "error_message":"db0.db: DB_NOTFOUND: No matching key/data pair found"}' );
 
+# now object 1 created by superuser, object 2 created by normal user
+# try to replace:
+
+run_test('write db0', "$o2->{session}\n".'{"data":[4,5],"id":1}', '{"error_type":"write","error_message":"not enough permissions to edit"}' );
+run_test('write db0', "$o2->{session}\n".'{"data":[5,6],"id":2}', '{"data": [5, 6], "id": 2, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": 1}' );
+run_test('write db0', "$o1->{session}\n".'{"data":[6,7],"id":2}', '{"data": [6, 7], "id": 2, "mtime": 1234567890, "muser": "http://test.livejournal.com/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": 2}' );
+
+# read archive objects:
+run_test('read_arc db0 1',"", '{"data": [2, 3], "id": 1, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": -1}' );
+run_test('read_arc db0 2',"", '{"data": [5, 6], "id": 2, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": 1}' );
+run_test('read_arc db0 4',"", '{"error_type": "jsondb", "error_message":"db0.arc.db: DB_NOTFOUND: No matching key/data pair found"}' );

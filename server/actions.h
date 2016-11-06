@@ -22,7 +22,7 @@ action_func do_login,
 
 action_func do_write,
             do_read,
-            do_del,
+            do_read_arc,
             do_search;
 
 action_func local_dump_db;
