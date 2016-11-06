@@ -1,26 +1,10 @@
 <html>
 <head>
-  <LINK href="RESDIR/edb.css" rel="stylesheet" type="text/css">
-  <script type="text/JavaScript" src="RESDIR/knockout-3.4.0.js"></script>
-  <script type="text/JavaScript" src="RESDIR/edb.js"></script>
 </head>
 
-<body onload="main_on_load()">
+<body>
 
-  <!-- Top menu, login/logout buttons -->
-  <table width="100%" border=0 class="main_menu"><tr>
-  <td class=hh width="0%"><a href="MAINHTM">Главная</a></td>
-  <td class=hh width="0%"><a href="MAPHTM">Карта</a></td>
-  <td class=hh width="0%"><a href="HELPHTM">Документация</a></td>
-  <td class=hh align=right>
-    <a href="USERHTM" data-bind="text:alias"></a>
-    <input type=submit value="выйти" style="display:none"
-       data-bind='visible: is_logged, click: logout'>
-    <a style="display:none"
-       data-bind='visible: !is_logged(), attr: {href: lgnz_url}'>войти</a>
-  </td>
-  </tr></table>
-  <hr>
+<h3>Eventdb server</h3>
 
 <ul>
 <li><a href="#arch"><b>Архитектура</b></a>
@@ -242,7 +226,7 @@ id сессии (или пустая строка для анонимного входа).
 </ul>
 
 <!------------------------------------------------------------------->
-<hr><a name=maps></a><h3>Сервер: работа с данными -- не сделано</h3>
+<hr><a name=data></a><h3>Сервер: работа с данными -- не сделано</h3>
 
 <p>Сервер позволяет создавать, редактировать, удалять, искать произвольные
 json-объекты.
