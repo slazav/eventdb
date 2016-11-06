@@ -1,8 +1,5 @@
-#JANSSON_CFLAGS := $(shell pkg-config --cflags jansson)
-#JANSSON_LIBS := $(shell pkg-config --libs jansson)
-
-LDLIBS=../jansson/src/.libs/libjansson.a
-CFLAGS=-I../jansson/src
+CFLAGS = $(shell pkg-config --cflags jansson)
+LDLIBS = $(shell pkg-config --libs jansson)
 
 all: test1 test2
 
