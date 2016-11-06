@@ -111,6 +111,14 @@ class Json{
     return ret;
   }
 
+  // parse stream
+  static Json load_stream(FILE * f, const size_t flags=0){
+    json_error_t e;
+    Json ret(json_loadf(f, flags, &e));
+    if (!ret) throw Err() << e.text;
+    return ret;
+  }
+
   // parse file
   static Json load_file(const std::string & f, const size_t flags=0){
     json_error_t e;

@@ -74,20 +74,20 @@ get_anon(){
   return ret;
 }
 
-// check user alias
-#define MINALIAS 2
-#define MAXALIAS 30
-#define ALIASSYMB\
+// check user alias or database name
+#define MINNAME 2
+#define MAXNAME 30
+#define NAMESYMB\
   "abcdefghijklmnopqrstuvwxyz"\
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"\
   "0123456789_"
 void
-check_alias(const char *alias){
-  int n=strlen(alias);
-  if (n<MINALIAS) throw Err() << "too short alias";
-  if (n>MAXALIAS) throw Err() << "too long alias";
-  if (strspn(alias, ALIASSYMB)!=n)
-    throw Err() << "only letters, numbers and _ are allowed in alias";
+check_name(const char *name){
+  int n=strlen(name);
+  if (n<MINNAME) throw Err() << "too short name";
+  if (n>MAXNAME) throw Err() << "too long name";
+  if (strspn(name, NAMESYMB)!=n)
+    throw Err() << "only letters, numbers and _ are allowed in name";
 }
 
 /********************************************************************/
@@ -163,11 +163,11 @@ do_login(const CFG & cfg, int argc, char **argv){
     string name = face["name"].as_string();
     string alias;
     for (int i=0; i<name.length(); i++){
-      if (index(ALIASSYMB, name[i])==NULL) continue;
-      if (i>=MAXALIAS) break;
+      if (index(NAMESYMB, name[i])==NULL) continue;
+      if (i>=MAXNAME) break;
       alias.push_back(name[i]);
     }
-    if (alias.length() < MINALIAS) alias="user01";
+    if (alias.length() < MINNAME) alias="user01";
 
     // if alias exists try "user01", "user02", etc.
     int num=1;
@@ -252,7 +252,7 @@ do_set_alias(const CFG & cfg, int argc, char **argv){
   const char *alias = argv[1];
 
   // check length and symbols in the new alias:
-  check_alias(alias);
+  check_name(alias);
 
   /* Get user information. Empty session is an error */
   UserDB udb(cfg);
@@ -443,32 +443,83 @@ local_dump_db(const CFG & cfg, int argc, char **argv){
 
 /********************************************************************/
 class DataDB : public JsonDB{
+  JsonDB arc;
   public:
   DataDB(const CFG & cfg, const std::string name, const int flags=0):
-       JsonDB(cfg.datadir + "/" + name, true, flags){
-    secondary_open("date_key",  true);
-    secondary_open("coord_key", true);
-    secondary_open("keys",  true);
-    secondary_open("type",  true);
-    secondary_open("ctime", true);
-    secondary_open("cuser", true);
-    secondary_open("mtime", true);
-    secondary_open("muser", true);
+       JsonDB(cfg.datadir + "/" + name, true, flags),
+       arc(cfg.datadir + "/" + name + ".arc", true, flags){
+//    secondary_open("date_key",  true);
+//    secondary_open("coord_key", true);
+//    secondary_open("keys",  true);
+//    secondary_open("type",  true);
+//    secondary_open("ctime", true);
+//    secondary_open("cuser", true);
+//    secondary_open("mtime", true);
+//    secondary_open("muser", true);
   }
 };
 
 void
 do_write(const CFG & cfg, int argc, char **argv){
-}
+  Err("write"); // set error domain
+  check_args(argc, 1);        // check argument number
+  char * dbname = argv[1];    // database name
 
-void
-do_del(const CFG & cfg, int argc, char **argv){
+  /* check length and symbols in the database name */
+  check_name(dbname);
+
+  /* Get user information. Empty session is an error */
+  UserDB udb(cfg, DB_RDONLY);
+  Json user = udb.get_by_session(get_secret());
+  clr_secret();
+  if (!user) throw Err() << "authentication error";
+
+  /* read JSON object from stdin */
+  Json data = Json::load_stream(stdin);
+
+  /* LEVEL_ADMIN can create databases */
+  size_t dbflags = (user["level"].as_integer() >= LEVEL_ADMIN)? DB_CREATE:0;
+
+  DataDB db(cfg, dbname, dbflags); // open database
+  db.put(data); // put data
+
+  throw Exc() << data.save_string(JSON_OUT_FLAGS);
 }
 
 void
 do_read(const CFG & cfg, int argc, char **argv){
+  Err("read"); // set error domain
+  check_args(argc, 2);        // check argument number
+  char * dbname = argv[1];    // database name
+  json_int_t id  = atoi(argv[2]); // object id (0 for new)
+
+  /* check length and symbols in the database name */
+  check_name(dbname);
+  DataDB db(cfg, dbname, DB_RDONLY);
+  throw Exc() << db.get(id).save_string(JSON_OUT_FLAGS);
+}
+
+void
+do_del(const CFG & cfg, int argc, char **argv){
+  Err("del"); // set error domain
+  check_args(argc, 2);        // check argument number
+  char * dbname = argv[1];    // database name
+  json_int_t id  = atoi(argv[2]); // object id (0 for new)
+
+  /* check length and symbols in the database name */
+  check_name(dbname);
+//  DataDB db(cfg, dbname, DB_RDONLY);
+//  throw Exc() << db.get(id).save_string(JSON_OUT_FLAGS);
 }
 
 void
 do_search(const CFG & cfg, int argc, char **argv){
+  Err("search"); // set error domain
+  check_args(argc, 1);        // check argument number
+  char * dbname = argv[1];    // database name
+
+  /* check length and symbols in the database name */
+  check_name(dbname);
+//  DataDB db(cfg, dbname, DB_RDONLY);
+//  throw Exc() << db.get(id).save_string(JSON_OUT_FLAGS);
 }

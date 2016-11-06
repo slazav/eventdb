@@ -11,7 +11,7 @@ sub run_test{
   my $args = shift;
   my $sec  = shift;
   my $exp  = shift;
-  my $res  = `printf "%s" "$sec" | ./eventdb $args`;
+  my $res  = `printf "%s" '$sec' | ./eventdb $args`;
   my $out;
   $res =~ s/\"stime\": (\d+)/\"stime\": 1234567890/;
   $out->{stime}=$1;
@@ -85,9 +85,9 @@ run_test('logout', $o2->{session}, $r_an);
 run_test('my_info', $o2->{session}, $r_an);
 
 # set alias
-run_test('set_alias s', $o1->{session}, '{"error_type":"set_alias","error_message":"too short alias"}');
-run_test('set_alias 1234567890123456789012345678901', $o1->{session}, '{"error_type":"set_alias","error_message":"too long alias"}');
-run_test('set_alias s@s', $o1->{session}, '{"error_type":"set_alias","error_message":"only letters, numbers and _ are allowed in alias"}');
+run_test('set_alias s', $o1->{session}, '{"error_type":"set_alias","error_message":"too short name"}');
+run_test('set_alias 1234567890123456789012345678901', $o1->{session}, '{"error_type":"set_alias","error_message":"too long name"}');
+run_test('set_alias s@s', $o1->{session}, '{"error_type":"set_alias","error_message":"only letters, numbers and _ are allowed in name"}');
 $r1=~s/\"alias\": \"[^\"]*\"/\"alias\": \"sla\"/;
 run_test('set_alias sla', $o1->{session}, $r1);
 run_test('set_alias sla', $o4->{session}, '{"error_type":"set_alias","error_message":"alias exists"}');
@@ -154,4 +154,33 @@ run_test('joinreq_accept 1', $o2->{session}, '{"id": 2, "faces": ['.$FBF.', '.$L
 run_test('joinreq_accept 0', $o2->{session}, '{"id": 2, "faces": ['.$FBF.', '.$LJF.', '.$VKF.'], "level": 3, "alias": "TestUser", '.$FBS.', '.$ST.'}');
 
 run_test('my_info', $o2->{session}, '{"id": 2, "faces": ['.$FBF.', '.$LJF.', '.$VKF.'], "level": 3, "alias": "TestUser", '.$FBS.', '.$ST.'}');
+
+#*********************
+# write/read data
+
+# cleanup data folders
+`rm -fr   -- ./data ./logs ./files`;
+`mkdir -p -- ./data ./logs ./files`;
+
+# login again
+$r1 = '{"id": 1, "faces": ['.$LJF.'], "level": 3, "alias": "test", '.$LJS.', '.$ST.'}';
+$r2 = '{"id": 2, "faces": ['.$FBF.'], "level": 0, "alias": "TestUser", '.$FBS.', '.$ST.'}';
+$r3 = '{"id": 3, "faces": ['.$VKF.'], "level": 0, "alias": "user01", '.$VKS.', '.$ST.'}';
+$o1 = run_test('login', '382512edfa7149b79b910cf6227e3e16', $r1);
+$o2 = run_test('login', '7202c11c442dbd1e7c7f9c33e2ee61d9', $r2);
+$o3 = run_test('login', '6222d12c54a233deae789c3ce22eb1d9', $r3);
+
+# wrong number of arguments:
+run_test('write',  $o2->{session}, '{"error_type":"write","error_message":"wrong number of arguments, should be 1"}' );
+run_test('read',   $o2->{session}, '{"error_type":"read","error_message":"wrong number of arguments, should be 2"}' );
+run_test('del',    $o2->{session}, '{"error_type":"del","error_message":"wrong number of arguments, should be 2"}' );
+run_test('search', $o2->{session}, '{"error_type":"search","error_message":"wrong number of arguments, should be 1"}' );
+
+# o2 can't create databases
+run_test('write db0', $o2->{session}."\n{}", '{"error_type": "jsondb", "error_message":"db0.db: No such file or directory"}' );
+# id field should exist
+run_test('write db0', $o1->{session}."\n{}", '{"error_type": "jsondb", "error_message":"db0.db: no id field in the json"}');
+
+run_test('write db0', "$o1->{session}\n".'{"id":-1, "data":[0,2]}', '{"id": 1, "data": [0, 2]}' );
+run_test('read db0 1',  $o1->{session}, '{"id": 1, "data": [0, 2]}' );
 
