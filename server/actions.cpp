@@ -517,10 +517,43 @@ do_write(const CFG & cfg, int argc, char **argv){
     data.set("prev", old["id"]);
   }
 
-  /* build date_key and coord_key */
+  /* build date_key */
+  if (data.exists("date1") && data["date1"].is_string() &&
+      data.exists("date2") && data["date2"].is_string()){
+    //put in data_key first common part of date1 and date2
+    string d1 = data["date1"].as_string();
+    string d2 = data["date2"].as_string();
+    string dk = "";
+    for (int i=0;i<std::min(d1.length(),d2.length());i++){
+      if (d1[i]==d2[i]) dk+=d1[i];
+      else break;
+    }
+    data.set("date_key", dk);
+  }
+  else {
+    // remove date_key field if it exists
+    if (data.exists("date_key")) data.del("date_key");
+  }
+
+  /* build coord_key */
+  if (data.exists("lat1") && data["lat1"].is_number() &&
+      data.exists("lat2") && data["lat2"].is_number() &&
+      data.exists("lon1") && data["lon1"].is_number() &&
+      data.exists("lon2") && data["lon2"].is_number()){
+    double lat1 = data["lat1"].as_real();
+    double lat2 = data["lat2"].as_real();
+    double lon1 = data["lon1"].as_real();
+    double lon2 = data["lon2"].as_real();
+    string ck="";
+    // todo
+    data.set("coord_key", ck);
+  }
+  else {
+    // remove coord_key field if it exists
+    if (data.exists("coord_key")) data.del("coord_key");
+  }
 
   db.put(data); // put data
-
   throw Exc() << data.save_string(JSON_OUT_FLAGS);
 }
 
@@ -534,7 +567,15 @@ do_read(const CFG & cfg, int argc, char **argv){
   /* check length and symbols in the database name */
   check_name(dbname);
   DataDB db(cfg, dbname, DB_RDONLY);
-  throw Exc() << db.get(id).save_string(JSON_OUT_FLAGS);
+  Json data = db.get(id);
+
+  /* change user id's to aliases */
+  UserDB udb(cfg, DB_RDONLY);
+  Json cuser = udb.get_by_face(data["cuser"].as_string())["alias"];
+  Json muser = udb.get_by_face(data["muser"].as_string())["alias"];
+  data.set("cuser", cuser);
+  data.set("muser", muser);
+  throw Exc() << data.save_string(JSON_OUT_FLAGS);
 }
 
 void
@@ -547,7 +588,15 @@ do_read_arc(const CFG & cfg, int argc, char **argv){
   /* check length and symbols in the database name */
   check_name(dbname);
   DataDB db(cfg, dbname, DB_RDONLY);
-  throw Exc() << db.arc.get(id).save_string(JSON_OUT_FLAGS);
+  Json data = db.arc.get(id);
+
+  /* change user id's to aliases */
+  UserDB udb(cfg, DB_RDONLY);
+  Json cuser = udb.get_by_face(data["cuser"].as_string())["alias"];
+  Json muser = udb.get_by_face(data["muser"].as_string())["alias"];
+  data.set("cuser", cuser);
+  data.set("muser", muser);
+  throw Exc() << data.save_string(JSON_OUT_FLAGS);
 }
 
 void

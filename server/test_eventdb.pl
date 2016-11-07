@@ -185,7 +185,7 @@ run_test('write db0', "$o1->{session}\n".'{"data":[0,2]}', '{"data": [0, 2], "id
 run_test('write db0', "$o2->{session}\n".'{"data":[2,3],"id":-1}', '{"data": [2, 3], "id": 2, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": -1}' );
 run_test('write db0', "$o1->{session}\n".'{"id":5}',   '{"error_type":"write","error_message":"bad id"}' );
 run_test('write db0', "$o1->{session}\n".'{"id":"a"}', '{"error_type": "jsonxx", "error_message":"can\'t cast to integer"}');
-run_test('read db0 2',  $o1->{session}, '{"data": [2, 3], "id": 2, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": -1}' );
+run_test('read db0 2',  $o1->{session}, '{"data": [2, 3], "id": 2, "mtime": 1234567890, "muser": "TestUser", "ctime": 1234567890, "cuser": "TestUser", "prev": -1}' );
 run_test('read db0 4',  $o1->{session}, '{"error_type": "jsondb", "error_message":"db0.db: DB_NOTFOUND: No matching key/data pair found"}' );
 
 # now object 1 created by superuser, object 2 created by normal user
@@ -194,8 +194,13 @@ run_test('read db0 4',  $o1->{session}, '{"error_type": "jsondb", "error_message
 run_test('write db0', "$o2->{session}\n".'{"data":[4,5],"id":1}', '{"error_type":"write","error_message":"not enough permissions to edit"}' );
 run_test('write db0', "$o2->{session}\n".'{"data":[5,6],"id":2}', '{"data": [5, 6], "id": 2, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": 1}' );
 run_test('write db0', "$o1->{session}\n".'{"data":[6,7],"id":2}', '{"data": [6, 7], "id": 2, "mtime": 1234567890, "muser": "http://test.livejournal.com/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": 2}' );
+run_test('read db0 2',"", '{"data": [6, 7], "id": 2, "mtime": 1234567890, "muser": "test", "ctime": 1234567890, "cuser": "TestUser", "prev": 2}' );
 
 # read archive objects:
-run_test('read_arc db0 1',"", '{"data": [2, 3], "id": 1, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": -1}' );
-run_test('read_arc db0 2',"", '{"data": [5, 6], "id": 2, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": 1}' );
+run_test('read_arc db0 1',"", '{"data": [2, 3], "id": 1, "mtime": 1234567890, "muser": "TestUser", "ctime": 1234567890, "cuser": "TestUser", "prev": -1}' );
+run_test('read_arc db0 2',"", '{"data": [5, 6], "id": 2, "mtime": 1234567890, "muser": "TestUser", "ctime": 1234567890, "cuser": "TestUser", "prev": 1}' );
 run_test('read_arc db0 4',"", '{"error_type": "jsondb", "error_message":"db0.arc.db: DB_NOTFOUND: No matching key/data pair found"}' );
+
+# dates
+run_test('write db0', "$o2->{session}\n".'{"data":[5,6],"date1":"2016/01/02","date2":"2016/02/12","id":2}',
+  '{"data": [5, 6], "date1": "2016/01/02", "date2": "2016/02/12", "id": 2, "mtime": 1234567890, "muser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "ctime": 1234567890, "cuser": "https://www.facebook.com/app_scoped_user_id/000000000000000/", "prev": 3, "date_key": "2016/0"}' );
